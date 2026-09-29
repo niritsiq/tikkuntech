@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FeedBench Algorithm Lab</title>
+<style>
+:root{color-scheme:dark;--bg:#091321;--panel:#132239;--panel2:#0f1d31;--stroke:#2b425b;--text:#edf5ff;--muted:#9cb0c6;--dim:#6f849b;
+ --mint:#70ead5;--harm:#fb7185;--harm-bg:#3a1622;--counter:#70ead5;--counter-bg:#12383a;--news:#94bcff;--news-bg:#172a4a;--control:#fbd28b;--control-bg:#3a2e14;
+ --before:#a3b3c7;--after:#70ead5;--c0:#a78bfa;--c1:#38bdf8;--c2:#f59e0b;--good:#4ade80;--warn:#fbbf24;--bad:#fb7185}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 82% -10%,#174849 0,transparent 48%),var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+.wrap{max-width:1440px;margin:auto;padding:20px 16px 56px}
+.hero{padding:22px 26px;border:1px solid #375769;border-radius:18px;background:linear-gradient(120deg,#173b41,#17243c 72%,#15323b);margin-bottom:16px}
+.hero h1{font-size:clamp(24px,4vw,38px);margin:4px 0;letter-spacing:-1px;line-height:1.2}
+.hero p{color:#bdd3dc;max-width:980px;margin:6px 0 0}
+.tag{display:inline-block;border:1px solid #337b78;background:#154447;color:#b3ffef;border-radius:99px;padding:3px 9px;font-size:10px;font-weight:800;letter-spacing:.6px;margin:0 5px 4px 0;text-transform:uppercase}
+.tag.warn{border-color:#7c5b22;background:#3a2e14;color:var(--control)}
+h2{font-size:18px;margin:0 0 4px}h3{font-size:14px;margin:0 0 6px}
+.muted{color:var(--muted)}.small{font-size:12px;color:var(--muted)}
+.layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px}
+@media(max-width:980px){.layout{grid-template-columns:1fr}.side{position:static!important;max-height:none!important}}
+.side,.card{border:1px solid var(--stroke);background:var(--panel);border-radius:14px}
+.side{padding:16px;position:sticky;top:12px;align-self:start;max-height:calc(100vh - 24px);overflow:auto}
+.main{min-width:0}.card{padding:16px;margin-bottom:14px}
+.section{font-size:11px;font-weight:800;color:#9ae9dc;text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px}
+.field{margin:8px 0 12px}.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+select,input[type=search]{width:100%;background:#0b1c30;border:1px solid #416078;border-radius:9px;padding:7px 9px}
+input[type=range]{width:100%;accent-color:var(--mint)}
+.doc{background:#0b1c30;border:1px solid #355369;border-radius:10px;padding:8px 10px;font-size:12px;color:#c3e7ed;margin-top:6px}
+.btn{border:1px solid #426179;border-radius:9px;background:#1b334b;padding:7px 11px;font-weight:700;font-size:13px}
+.btn:hover{border-color:#70b0ab}.btn.primary{background:#48d4c0;color:#06242c;border-color:#48d4c0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.metric{border:1px solid var(--stroke);background:var(--panel2);border-radius:12px;padding:12px}
+.metric .k{font-size:12px;color:var(--muted)}.metric .v{font-size:26px;font-weight:750;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.metric .d{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+.delta{font-weight:700}.delta.good{color:var(--good)}.delta.bad{color:var(--bad)}.delta.warn{color:var(--warn)}.delta.neutral{color:var(--muted)}
+.verdict{margin-top:10px;padding:10px 12px;border-radius:10px;background:#0b1c30;border:1px solid #355369;font-size:13px}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.chart{position:relative}.chart svg{width:100%;height:auto;display:block}
+.chart text{fill:var(--dim);font-size:10px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:6px}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.tooltip{position:fixed;pointer-events:none;background:#0b1c30;border:1px solid #416078;border-radius:8px;padding:6px 9px;font-size:12px;z-index:20;white-space:nowrap}
+.hidden{display:none!important}
+/* Twitter-style feeds */
+.feeds{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+@media(max-width:760px){.feeds{grid-template-columns:1fr}}
+.phone{border:1px solid var(--stroke);border-radius:16px;background:#050c16;overflow:hidden;min-width:0}
+.phone-head{padding:10px 14px;border-bottom:1px solid #1d2d40;display:flex;justify-content:space-between;align-items:center;gap:8px;background:#0a1626}
+.phone-head b{font-size:14px}.phone-head .pill{font-size:11px;border-radius:99px;padding:2px 8px;border:1px solid}
+.pill.before{color:var(--before);border-color:#4b5b6f}.pill.after{color:var(--after);border-color:#2f6f66}
+.tweet{display:grid;grid-template-columns:40px minmax(0,1fr);gap:10px;padding:12px 14px;border-bottom:1px solid #16263a;position:relative}
+.tweet.harmful{background:linear-gradient(90deg,var(--harm-bg),transparent 70%);box-shadow:inset 3px 0 0 var(--harm)}
+.tweet.counter{box-shadow:inset 3px 0 0 var(--counter)}
+.tweet.acted{background-color:#0e2a2a}
+.avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#07121f;flex:none}
+.avatar.sm{width:26px;height:26px;font-size:10px}
+.t-head{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;font-size:13px}
+.t-head .n{font-weight:750}.t-head .h,.t-head .time{color:var(--dim)}
+.t-text{margin:3px 0 6px;font-size:14px;overflow-wrap:anywhere}
+.redacted{border:1px dashed var(--harm);border-radius:8px;padding:8px 10px;color:#fecdd3;font-size:13px;margin:4px 0 6px}
+.redacted b{color:var(--harm)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.chip{font-size:10.5px;font-weight:750;border-radius:99px;padding:1px 8px;border:1px solid}
+.chip.harmful{color:var(--harm);border-color:#7f2b3e;background:var(--harm-bg)}
+.chip.counter{color:var(--counter);border-color:#2f6f66;background:var(--counter-bg)}
+.chip.news{color:var(--news);border-color:#3a5b8e;background:var(--news-bg)}
+.chip.control{color:var(--control);border-color:#7c5b22;background:var(--control-bg)}
+.chip.slot{color:var(--muted);border-color:#2b425b}
+.t-stats{display:flex;gap:18px;color:var(--dim);font-size:12px;font-variant-numeric:tabular-nums}
+.t-stats .me{color:var(--mint);font-weight:750}
+.t-score{font-size:11px;color:var(--dim);margin-top:4px;font-family:ui-monospace,Consolas,monospace}
+.t-replies{margin-top:6px;border-left:2px solid #1d2d40;padding-left:8px;display:grid;gap:4px}
+.t-reply{font-size:12px;color:var(--muted)}.t-reply.counter{color:#b7f5ea}.t-reply b{color:var(--text);font-weight:650}
+.empty{padding:26px 16px;color:var(--muted);font-size:13px;text-align:center}
+.profile{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}
+.profile .bio{font-size:13px;color:#c9d6e4}
+/* network grid */
+.grids{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+@media(max-width:760px){.grids{grid-template-columns:1fr}}
+.grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px}
+.node{aspect-ratio:1;border-radius:50%;border:2px solid transparent;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#07121f;cursor:pointer;padding:0}
+.node.off{opacity:.25}.node.now{border-color:var(--harm);box-shadow:0 0 0 2px var(--harm)}
+.node.before{border-color:#7f2b3e}.node.churn{opacity:.12;filter:grayscale(1)}
+.node.sel{outline:2px solid #fff;outline-offset:1px}
+.keyline{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);margin-top:8px;align-items:center}
+.keyline span.k{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-2px;margin-right:5px;background:#50627a}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #22384f;vertical-align:top}
+th{color:var(--muted);font-weight:650;font-size:11.5px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.pick{cursor:pointer}tr.pick:hover td{background:#17304a}tr.cur td{background:#163a3f}
+.table-wrap{overflow-x:auto}
+.bars{display:grid;gap:3px}
+.bar{display:grid;grid-template-columns:78px 1fr 40px;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+.bar .track{height:10px;background:#0b1c30;border-radius:3px;position:relative;overflow:hidden}
+.bar .fill{position:absolute;inset:0 auto 0 0;border-radius:0 4px 4px 0}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}@media(max-width:760px){.cols{grid-template-columns:1fr}}
+code,pre{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+pre{background:#0b1c30;border:1px solid #355369;border-radius:10px;padding:10px;overflow-x:auto;color:#c3e7ed}
+ul.lim{margin:6px 0 0;padding-left:18px;color:var(--muted);font-size:13px}
+/* Live network */
+.live-card{padding:16px;min-width:0}
+.live-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+.live-controls select{width:auto;min-width:120px}
+.live-controls .spacer{flex:1}
+.impact{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:8px 0 12px}
+.impact .box{background:var(--panel2);border:1px solid var(--stroke);border-radius:12px;padding:10px 12px;min-width:0}
+.impact .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+.impact .pair{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;font-variant-numeric:tabular-nums;margin-top:2px}
+.impact .pair b{font-size:20px}.impact .pair .b{color:var(--before)}.impact .pair .a{color:var(--after)}
+.impact .delta{font-size:13px;margin-left:auto}
+.stages{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.stages > div{min-width:0}
+@media(max-width:860px){.stages{grid-template-columns:minmax(0,1fr)}}
+.stage{position:relative;border:1px solid var(--stroke);border-radius:12px;overflow:hidden;background:#06101c;height:430px}
+.stage canvas{display:block;width:100%;height:100%;cursor:pointer}
+.stage-head{position:absolute;left:10px;top:8px;z-index:2;pointer-events:none;font-size:12px;font-weight:700;color:#d8e8f5;max-width:calc(100% - 20px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stage-hud{position:absolute;left:10px;top:28px;z-index:2;pointer-events:none;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;max-width:calc(100% - 20px)}
+.stage-hud b{color:#fff}.stage-hud .h{color:var(--harm)}.stage-hud .e{color:#7dd3fc}.stage-hud .c{color:var(--counter)}
+.msg-pop{position:absolute;z-index:3;left:10px;right:10px;bottom:10px;padding:8px 11px;border-radius:10px;background:#0b1c30f2;border:1px solid #355369;pointer-events:none;opacity:0;transition:opacity .2s;font-size:12px}
+.msg-pop.show{opacity:1}
+.msg-pop .route{font-weight:750;color:#f0f8ff;display:flex;justify-content:space-between;gap:6px;align-items:center;margin-bottom:2px;min-width:0}
+.msg-pop .route span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg-pop .txt{color:#c7ddec;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.msg-pop.harmful{border-color:#a04c68}.msg-pop.counter{border-color:#2f8f80}
+.ticker{display:flex;flex-direction:column;gap:4px;margin-top:8px;height:104px;overflow:hidden;min-width:0}
+.tick{font-size:11.5px;color:#bfd4e4;background:var(--panel2);border:1px solid var(--stroke);border-left:3px solid var(--edge,#7dd3fc);border-radius:7px;padding:3px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:none}
+.live-legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11.5px;color:var(--muted);margin-top:10px}
+.live-legend i{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align:-1px;margin-right:5px}
+@media (prefers-reduced-motion: reduce){.msg-pop{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div><span class="tag">CAMEL OASIS · Twitter mode</span><span class="tag">Synthetic users</span><span class="tag" id="modeTag">Scripted agents</span><span class="tag warn">Harmful posts are placeholders</span></div>
+    <h1>FeedBench Algorithm Lab</h1>
+    <p>The same synthetic Twitter population, follow graph and posts, simulated on OASIS under two ranking algorithms. The page shows what each user's timeline looked like before and after the change, how much antisemitic content was delivered, and what happened to ordinary engagement and counterspeech.</p>
+    <p class="small" id="engine"></p>
+  </header>
+
+  <div class="layout">
+    <aside class="side">
+      <h2>Experiment</h2>
+      <div class="field"><label for="scenario">Scenario</label><select id="scenario"></select></div>
+      <p class="small" id="question"></p>
+      <div class="section">Algorithms</div>
+      <div class="field"><label for="before">Before (baseline)</label><select id="before"></select><div class="doc" id="beforeDoc"></div></div>
+      <div class="field"><label for="after">After (your change)</label><select id="after"></select><div class="doc" id="afterDoc"></div></div>
+      <div class="section">Replay</div>
+      <div class="field"><label for="userSearch">User</label><input type="search" id="userSearch" placeholder="Search name or @handle"><select id="user" size="6" style="margin-top:6px"></select></div>
+      <div class="field"><label for="round">Round <b id="roundv"></b></label><input type="range" id="round" min="0" max="19" value="6"></div>
+      <div class="row"><button class="btn" id="prev">◀</button><button class="btn primary" id="play">▶ Play</button><button class="btn" id="next">▶</button><button class="btn" id="jump" title="Jump to the user whose feed changed most">Most changed user</button></div>
+      <p class="small" id="diffNote"></p>
+      <div class="section">Export</div>
+      <button class="btn" id="export">Download comparison (JSON)</button>
+    </aside>
+
+    <main class="main">
+      <section class="card">
+        <div class="row" style="justify-content:space-between"><h2>Result: <span id="pairTitle"></span></h2><span class="small" id="seedNote"></span></div>
+        <div class="metrics" id="metrics"></div>
+        <div class="verdict" id="verdict"></div>
+      </section>
+
+      <section class="card live-card" id="liveCard">
+        <h2>Live network: before and after your rule</h2>
+        <p class="small">The OASIS run (replay seed) played back for both algorithms at the same time. A dot travels from sender to receiver for every reply and repost; the latest message pops up at the bottom. A red ring marks users who have been shown antisemitic posts.</p>
+        <div class="impact" id="impact"></div>
+        <div class="live-controls">
+          <button class="btn primary" id="livePlay">▶ Play live</button>
+          <button class="btn" id="liveRestart">⟲ Restart</button>
+          <select id="liveSpeed" aria-label="Speed"><option value="0.5">0.5× speed</option><option value="1" selected>1× speed</option><option value="2">2× speed</option><option value="4">4× speed</option></select>
+          <span class="spacer"></span>
+          <span class="small" id="liveRound"></span>
+        </div>
+        <div class="stages" id="liveStages">
+          <div><div class="stage"><canvas id="liveBefore" aria-label="Live network before"></canvas><div class="stage-head" id="liveBeforeTitle"></div><div class="stage-hud" id="hudBefore"></div><div class="msg-pop" id="popBefore"></div></div><div class="ticker" id="tickBefore"></div></div>
+          <div><div class="stage"><canvas id="liveAfter" aria-label="Live network after"></canvas><div class="stage-head" id="liveAfterTitle"></div><div class="stage-hud" id="hudAfter"></div><div class="msg-pop" id="popAfter"></div></div><div class="ticker" id="tickAfter"></div></div>
+        </div>
+        <div class="live-legend"><span><i style="background:#7dd3fc"></i>reply / repost</span><span><i style="background:#70ead5"></i>counterspeech</span><span><i style="background:#fb7185"></i>antisemitic (shown or supported)</span><span><i style="background:#fbd28b"></i>new post</span><span><i style="background:transparent;border:2px solid #fb7185"></i>user has seen antisemitic posts</span><span>Dim = did not open the app · click a user to open their timeline</span></div>
+      </section>
+
+      <section class="card">
+        <div class="row" style="justify-content:space-between;align-items:flex-start">
+          <div><h2>Timelines before and after</h2><p class="small">What <span id="whoLine"></span> saw in round <b id="roundLabel"></b>, in the exact order OASIS delivered it. Counts show likes, reposts and replies at the moment the feed was served.</p></div>
+        </div>
+        <div class="profile" id="profile"></div>
+        <div class="feeds">
+          <div class="phone"><div class="phone-head"><b>Home</b><span class="pill before" id="beforePill"></span></div><div id="feedBefore"></div></div>
+          <div class="phone"><div class="phone-head"><b>Home</b><span class="pill after" id="afterPill"></span></div><div id="feedAfter"></div></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Who saw antisemitic content in round <span id="roundLabel2"></span></h2>
+        <p class="small">Each circle is a user, coloured by network community. Click a user to open their timeline.</p>
+        <div class="grids">
+          <div><h3 id="gridBeforeTitle"></h3><div class="grid" id="gridBefore"></div><p class="small" id="gridBeforeNote"></p></div>
+          <div><h3 id="gridAfterTitle"></h3><div class="grid" id="gridAfter"></div><p class="small" id="gridAfterNote"></p></div>
+        </div>
+        <div class="keyline"><span><span class="k" style="box-shadow:0 0 0 2px var(--harm)"></span>saw antisemitic post this round</span><span><span class="k" style="box-shadow:0 0 0 2px #7f2b3e"></span>saw one in an earlier round</span><span><span class="k" style="opacity:.3"></span>did not open the app</span><span><span class="k" style="opacity:.12"></span>left the platform</span><span id="commKey"></span></div>
+      </section>
+
+      <section class="card">
+        <h2>Over time</h2>
+        <p class="small">Cumulative counts per round, mean across seeds.</p>
+        <div class="legend"><span><i style="background:var(--before)"></i><span id="legBefore"></span></span><span><i style="background:var(--after)"></i><span id="legAfter"></span></span></div>
+        <div class="charts">
+          <div class="chart"><h3>Antisemitic impressions</h3><div id="chartHarm"></div></div>
+          <div class="chart"><h3>Ordinary engagement (likes, reposts, replies, posts)</h3><div id="chartEng"></div></div>
+          <div class="chart"><h3>Counterspeech exposure</h3><div id="chartCounter"></div></div>
+          <div class="chart"><h3>Users reached by antisemitic posts</h3><div id="chartReach"></div></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Inspect a post: how endorsements turn into ranking</h2>
+        <p class="small">Endorsements = distinct users per community who liked or reposted. The ranker never sees the antisemitism label.</p>
+        <div class="row"><select id="post" style="max-width:520px"></select></div>
+        <div id="postView" style="margin-top:10px"></div>
+      </section>
+
+      <section class="card">
+        <h2>All algorithms in this scenario</h2>
+        <p class="small">Compared with the baseline over paired seeds. Click a row to make it the "after" algorithm.</p>
+        <div class="table-wrap"><table id="leader"></table></div>
+      </section>
+
+      <section class="card">
+        <h2>Generated users</h2>
+        <p class="small" id="usersNote"></p>
+        <div class="table-wrap" style="max-height:420px;overflow-y:auto"><table id="users"></table></div>
+      </section>
+
+      <section class="card">
+        <h2>Add your own rule</h2>
+        <p class="small">Rules live in <code>feedbench/feedbench/custom_rules.py</code>. Rebuild this page with OASIS:</p>
+<pre>from .ranking import register_rule
+
+def my_popularity(p, cfg):              # p.endorsers_by_comm = {community: distinct endorsers}
+    return float(sum(min(cfg.community_cap, e) for e in p.endorsers_by_comm.values()))
+
+register_rule("my_rule", "M · My rule", popularity=my_popularity)
+
+# then:  python build_lab.py --rules total_endorsements my_rule</pre>
+        <h3 style="margin-top:12px">Method and limitations</h3>
+        <ul class="lim" id="limits"></ul>
+      </section>
+    </main>
+  </div>
+</div>
+<div class="tooltip hidden" id="tip"></div>
+
+<script>
+"use strict";
+const DATA = /*__DATA__*/null;
+const $ = (id) => document.getElementById(id);
+const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const nf = (n) => n == null || isNaN(n) ? "n/a" : Math.round(n).toLocaleString("en-US");
+const pct = (r) => r == null || !isFinite(r) ? "n/a" : (100 * r).toFixed(0) + "%";
+const chg = (r) => r == null || !isFinite(r) ? "n/a" : ((r - 1) * 100 > 0 ? "+" : "") + ((r - 1) * 100).toFixed(0) + "%";
+const COMM_COLORS = ["var(--c0)", "var(--c1)", "var(--c2)"];
+const SLOT = {i: "Following", r: "For you", e: "Explore"};
+const S = {sc: 0, before: "total_endorsements", after: "community_capped", user: 0, round: 6, timer: null};
+
+const scen = () => DATA.scenarios[S.sc];
+const rep = (rule) => scen().replay[rule];
+const users = () => scen().agents;
+const userById = (id) => users()[id];
+const commName = (c) => (users().find((u) => u.community === c) || {}).community_name || "Community " + c;
+function initials(u) { return (u.name || "U " + u.id).split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase(); }
+function avatar(u, cls = "") { return `<span class="avatar ${cls}" style="background:${COMM_COLORS[u.community % 3]}" title="${esc(u.name)} · ${esc(commName(u.community))}">${esc(initials(u))}</span>`; }
+
+// ---------- indexes (built per scenario + rule, cached) ----------
+const CACHE = new Map();
+function index(rule) {
+  const key = S.sc + "|" + rule;
+  if (CACHE.has(key)) return CACHE.get(key);
+  const r = rep(rule), idx = {active: {}, churnRound: {}, acts: {}, counts: {}, harmSeen: {}, byKey: {}};
+  for (const [t, a, early, churn] of r.sessions) { (idx.active[t] ||= new Set()).add(a); if (churn && idx.churnRound[a] == null) idx.churnRound[a] = t; }
+  for (const [t, a, act, pid] of r.actions) {
+    (idx.acts[t + "|" + a] ||= {})[pid] = act;
+    const c = (idx.counts[pid] ||= []);
+    c.push([t, act]);
+  }
+  for (const [pid, p] of Object.entries(r.posts)) if (p.key && p.key !== "organic") idx.byKey[p.key] = pid;
+  // first round each user was shown an antisemitic post
+  for (const [t, feeds] of Object.entries(r.feeds)) for (const [a, items] of Object.entries(feeds))
+    if (items.some((it) => (r.posts[it[0]] || {}).label === "harmful")) {
+      const prev = idx.harmSeen[a]; if (prev == null || +t < prev) idx.harmSeen[a] = +t;
+    }
+  CACHE.set(key, idx);
+  return idx;
+}
+function countsAt(rule, pid, t) {
+  const out = {like: 0, repost: 0, comment: 0};
+  for (const [r, act] of index(rule).counts[pid] || []) if (r < t && act in out) out[act]++;
+  return out;
+}
+
+// ---------- paired metrics from per-seed totals ----------
+function paired(key) {
+  const rows = scen().per_seed, b = {}, a = {};
+  for (const r of rows) { if (r.policy === S.before) b[r.seed] = r[key]; if (r.policy === S.after) a[r.seed] = r[key]; }
+  const seeds = Object.keys(b).filter((s) => s in a);
+  const sb = seeds.reduce((s, k) => s + b[k], 0), sa = seeds.reduce((s, k) => s + a[k], 0);
+  const per = seeds.filter((s) => b[s] > 0).map((s) => a[s] / b[s]);
+  return {before: sb / seeds.length, after: sa / seeds.length, ratio: sb > 0 ? sa / sb : null,
+          min: per.length ? Math.min(...per) : null, max: per.length ? Math.max(...per) : null, seeds: seeds.length};
+}
+
+// ---------- controls ----------
+function setupControls() {
+  $("scenario").innerHTML = DATA.scenarios.map((s, i) => `<option value="${i}">${esc(s.title)}${s.mode === "llm" ? " · LLM agents" : ""}</option>`).join("");
+  $("scenario").onchange = (e) => { S.sc = +e.target.value; fillRules(); pickDefaultUser(); renderAll(); };
+  $("before").onchange = (e) => { S.before = e.target.value; renderAll(); };
+  $("after").onchange = (e) => { S.after = e.target.value; renderAll(); };
+  $("user").onchange = (e) => { S.user = +e.target.value; renderReplay(); };
+  $("userSearch").oninput = fillUsers;
+  $("round").oninput = (e) => { stop(); S.round = +e.target.value; renderReplay(); if (LIVE.panes.length) { livePause(); liveSeek(S.round); } };
+  $("prev").onclick = () => step(-1); $("next").onclick = () => step(1);
+  $("play").onclick = () => S.timer ? stop() : play();
+  $("jump").onclick = () => { pickDefaultUser(); renderReplay(); };
+  $("post").onchange = renderPost;
+  $("export").onclick = download;
+  fillRules();
+}
+function fillRules() {
+  const rules = Object.keys(scen().replay);
+  const opt = (sel) => rules.map((k) => `<option value="${k}" ${k === sel ? "selected" : ""}>${esc((DATA.rules[k] || {}).label || k)}</option>`).join("");
+  if (!rules.includes(S.before)) S.before = rules[0];
+  if (!rules.includes(S.after) || S.after === S.before) S.after = rules.find((k) => k !== S.before) || rules[0];
+  $("before").innerHTML = opt(S.before); $("after").innerHTML = opt(S.after);
+  const rounds = scen().config.rounds;
+  $("round").max = rounds - 1; S.round = Math.min(S.round, rounds - 1);
+  fillUsers();
+}
+function fillUsers() {
+  const q = $("userSearch").value.trim().toLowerCase();
+  $("user").innerHTML = users().filter((u) => !q || (u.name + " @" + u.handle).toLowerCase().includes(q))
+    .map((u) => `<option value="${u.id}" ${u.id === S.user ? "selected" : ""}>${esc(u.name)} · @${esc(u.handle)}</option>`).join("");
+}
+function harmCount(rule, a, t) {
+  const r = rep(rule), items = (r.feeds[t] || {})[a] || [];
+  return items.filter((it) => (r.posts[it[0]] || {}).label === "harmful").length;
+}
+function pickDefaultUser() {
+  // user + round where the "before" feed had the most antisemitic posts relative to "after"
+  let best = {d: -1, a: 0, t: S.round};
+  const rounds = scen().config.rounds;
+  for (const u of users()) for (let t = 0; t < rounds; t++) {
+    const fa = (rep(S.after).feeds[t] || {})[u.id];
+    if (!fa || !fa.length) continue;     // show a user who actually has an "after" timeline
+    const d = harmCount(S.before, u.id, t) - harmCount(S.after, u.id, t);
+    if (d > best.d) best = {d, a: u.id, t};
+  }
+  if (best.d <= 0) {   // no antisemitic content (e.g. benign cascade): pick the most-changed feed instead
+    for (const u of users()) for (let t = 0; t < rounds; t++) {
+      const x = (rep(S.before).feeds[t] || {})[u.id] || [], y = (rep(S.after).feeds[t] || {})[u.id] || [];
+      const d = x.filter((it, i) => !y[i] || rep(S.before).posts[it[0]].text !== rep(S.after).posts[y[i][0]].text).length;
+      if (d > best.d) best = {d, a: u.id, t};
+    }
+  }
+  S.user = best.a; S.round = best.t; fillUsers();
+}
+function step(d) { const max = scen().config.rounds - 1; S.round = Math.max(0, Math.min(max, S.round + d)); renderReplay(); if (S.round === max) stop(); }
+function play() { if (S.round >= scen().config.rounds - 1) S.round = -1; $("play").textContent = "❚❚ Pause"; step(1); S.timer = setInterval(() => step(1), 1300); }
+function stop() { clearInterval(S.timer); S.timer = null; $("play").textContent = "▶ Play"; }
+
+function renderAll() {
+  const sc = scen(), label = (k) => (DATA.rules[k] || {}).label || k;
+  $("question").textContent = sc.question;
+  $("modeTag").textContent = sc.mode === "llm" ? "LLM agents (" + (sc.model || "OpenAI") + ")" : "Scripted agents";
+  $("beforeDoc").textContent = (DATA.rules[S.before] || {}).doc || ""; $("afterDoc").textContent = (DATA.rules[S.after] || {}).doc || "";
+  $("pairTitle").textContent = label(S.after) + " vs " + label(S.before);
+  $("beforePill").textContent = "Before · " + label(S.before); $("afterPill").textContent = "After · " + label(S.after);
+  $("legBefore").textContent = "Before · " + label(S.before); $("legAfter").textContent = "After · " + label(S.after);
+  $("gridBeforeTitle").textContent = "Before · " + label(S.before); $("gridAfterTitle").textContent = "After · " + label(S.after);
+  renderMetrics(); renderCharts(); renderLeader(); renderUsers(); fillPosts(); renderPost(); renderReplay();
+  if (LIVE.panes.length) { livePause(); liveReset(); }
+}
+
+function renderMetrics() {
+  const h = paired("harmful_impressions"), reach = paired("harmful_reach"), eng = paired("ordinary_engagement"),
+        cs = paired("counterspeech_exposure"), ctl = paired("control_reach"), churn = paired("churned");
+  const range = (m) => m.min == null ? "" : m.min === m.max ? `same ratio in all ${m.seeds} seeds` : `seed range ${chg(m.min)} to ${chg(m.max)}`;
+  const cls = (r, goodDown) => r == null ? "neutral" : Math.abs(r - 1) < 0.02 ? "neutral" : (goodDown ? r < 1 : r > 1) ? "good" : "bad";
+  const tiles = [
+    ["Antisemitic impressions", nf(h.after), `<span class="delta ${cls(h.ratio, true)}">${chg(h.ratio)}</span> vs ${nf(h.before)} before<br>${range(h)}`],
+    ["Users reached by antisemitic posts", nf(reach.after) + " / " + users().length, `<span class="delta ${cls(reach.ratio, true)}">${chg(reach.ratio)}</span> vs ${nf(reach.before)} before`],
+    ["Ordinary engagement kept", pct(eng.ratio), `<span class="delta ${eng.ratio != null && eng.ratio < 0.95 ? "warn" : "neutral"}">${nf(eng.after)} / ${nf(eng.before)}</span> likes, reposts, replies, posts<br>${range(eng)}`],
+    ["Counterspeech exposure kept", pct(cs.ratio), `<span class="delta ${cs.ratio != null && cs.ratio < 0.9 ? "warn" : "neutral"}">${nf(cs.after)} / ${nf(cs.before)}</span> impressions<br>${range(cs)}`],
+    ["Jewish community post reach", pct(ctl.ratio), `${nf(ctl.after)} / ${nf(ctl.before)} users saw the community-centre post (control)`],
+    ["Users who left", nf(churn.after), `vs ${nf(churn.before)} before (assumed reaction to antisemitic posts)`],
+  ];
+  $("metrics").innerHTML = tiles.map(([k, v, d]) => `<div class="metric"><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join("");
+  const s = [];
+  if (scen().has_harm_labels === false) s.push("⚠ This database has no antisemitism labels, so exposure cannot be measured. Add expert labels (db_to_lab.py --labels) and rebuild.");
+  if (h.ratio == null) s.push("No antisemitic posts were delivered under the baseline, so there is no exposure to compare.");
+  else s.push(h.ratio < 0.98 ? `The change delivered ${((1 - h.ratio) * 100).toFixed(0)}% fewer antisemitic impressions.` : h.ratio > 1.02 ? `The change delivered ${((h.ratio - 1) * 100).toFixed(0)}% MORE antisemitic impressions.` : "Antisemitic exposure was about the same.");
+  if (eng.ratio != null) s.push(eng.ratio >= 0.95 ? "Ordinary engagement was kept." : `Ordinary engagement fell to ${pct(eng.ratio)}.`);
+  if (cs.ratio != null) s.push(cs.ratio >= 0.9 ? "Counterspeech exposure was kept." : `Counterspeech exposure fell to ${pct(cs.ratio)}; counter-replies often travel with the posts they answer.`);
+  if (ctl.ratio != null && ctl.ratio < 0.9) s.push(`The Jewish community-centre post reached ${pct(ctl.ratio)} as many users: a cost to legitimate minority speech.`);
+  $("verdict").innerHTML = "<b>Feedback:</b> " + esc(s.join(" ")) + ` <span class="small">(${h.seeds} paired seeds; simulation variability only, not a real-world estimate.)</span>`;
+  $("seedNote").textContent = `${h.seeds} paired OASIS seeds · replay seed ${scen().replay_seed}`;
+}
+
+// ---------- timelines ----------
+function renderReplay() {
+  const t = S.round, u = userById(S.user);
+  $("round").value = t; $("roundv").textContent = t + (t >= 5 ? " · after the bank collapse" : " · before the event");
+  $("roundLabel").textContent = t; $("roundLabel2").textContent = t;
+  $("whoLine").textContent = u.name + " (@" + u.handle + ")";
+  $("profile").innerHTML = `${avatar(u)}<div><div><b>${esc(u.name)}</b> <span class="muted">@${esc(u.handle)}</span></div><div class="bio">${esc(u.bio)}</div>
+    <div class="small">${esc(u.location)} · joined ${esc(u.joined)} · ${u.following} following · ${u.followers} followers</div></div>`;
+  $("feedBefore").innerHTML = feedHTML(S.before, u.id, t);
+  $("feedAfter").innerHTML = feedHTML(S.after, u.id, t);
+  let diffs = 0, total = 0;
+  const fb = rep(S.before).feeds[t] || {}, fa = rep(S.after).feeds[t] || {};
+  for (const a of Object.keys(fb)) { const x = fb[a] || [], y = fa[a] || []; total += x.length; x.forEach((it, i) => { const p = rep(S.before).posts[it[0]], q = y[i] && rep(S.after).posts[y[i][0]]; if (!q || (p.key === "organic" ? p.text !== q.text : p.key !== q.key)) diffs++; }); }
+  $("diffNote").textContent = `Round ${t}: ${diffs} of ${total} feed slots differ between the two algorithms.`;
+  renderGrids();
+  [...document.querySelectorAll("[data-user]")].forEach((el) => el.onclick = () => { S.user = +el.dataset.user; fillUsers(); renderReplay(); });
+}
+function feedHTML(rule, a, t) {
+  const r = rep(rule), idx = index(rule);
+  if (idx.churnRound[a] != null && idx.churnRound[a] < t) return `<div class="empty">Left the platform in round ${idx.churnRound[a]} after seeing antisemitic content.</div>`;
+  const items = (r.feeds[t] || {})[a];
+  if (!items || !items.length) return `<div class="empty">Did not open the app this round. Whether a user opens the app is identical under both algorithms.</div>`;
+  const mine = idx.acts[t + "|" + a] || {};
+  return items.map(([pid, slot, score, pop, soc, rec]) => {
+    const p = r.posts[pid] || {text: "(post)", label: "benign", author: 0, round: t};
+    const au = userById(p.author) || {name: "User", handle: "user", community: 0};
+    const c = countsAt(rule, pid, t), act = mine[pid];
+    const chips = [`<span class="chip slot">${SLOT[slot] || slot}</span>`];
+    if (p.label === "harmful") chips.push(`<span class="chip harmful">Antisemitic · expert label</span>`);
+    if (p.label === "counter") chips.push(`<span class="chip counter">Counterspeech</span>`);
+    if (p.label === "news") chips.push(`<span class="chip news">News</span>`);
+    if (p.control) chips.push(`<span class="chip control">Jewish community post · control</span>`);
+    const body = p.label === "harmful"
+      ? `<div class="redacted"><b>⚠ Antisemitic post (placeholder)</b><br>${esc(p.text.replace(/^\[HARMFUL PLACEHOLDER[^:]*:\s*/, "").replace(/\]$/, "").replace(/ by user \d+$/, ""))}</div>`
+      : `<div class="t-text">${esc(p.text)}</div>`;
+    const replies = ((r.replies || {})[pid] || []).filter((x) => x[0] < t).slice(-2).map(([rr, ra, lab, txt]) => {
+      const ru = userById(ra) || {name: "User", handle: "user"};
+      const text = lab === "harmful" ? "⚠ supportive reply (placeholder)" : txt;
+      return `<div class="t-reply ${lab === "counter" ? "counter" : ""}"><b>${esc(ru.name)}</b> ${esc(text)}</div>`;
+    }).join("");
+    const me = {like: "♥ You liked this", repost: "↻ You reposted this", comment: "💬 You replied"}[act] || "";
+    return `<article class="tweet ${p.label === "harmful" ? "harmful" : ""} ${p.label === "counter" ? "counter" : ""} ${act ? "acted" : ""}">
+      <span data-user="${au.id}" style="cursor:pointer">${avatar(au)}</span>
+      <div style="min-width:0"><div class="t-head"><span class="n">${esc(au.name)}</span><span class="h">@${esc(au.handle)}</span><span class="time">· round ${p.round}</span></div>
+      <div class="chips">${chips.join("")}</div>${body}
+      <div class="t-stats"><span>💬 ${c.comment}</span><span>↻ ${c.repost}</span><span>♥ ${c.like}</span>${me ? `<span class="me">${me}</span>` : ""}</div>
+      <div class="t-score">score ${score} = popularity ${pop} + social ${soc} + recency ${rec}</div>
+      ${replies ? `<div class="t-replies">${replies}</div>` : ""}</div></article>`;
+  }).join("");
+}
+function renderGrids() {
+  for (const [rule, grid, note] of [[S.before, "gridBefore", "gridBeforeNote"], [S.after, "gridAfter", "gridAfterNote"]]) {
+    const idx = index(rule), t = S.round, active = idx.active[t] || new Set();
+    let now = 0, ever = 0;
+    $(grid).innerHTML = users().map((u) => {
+      const churned = idx.churnRound[u.id] != null && idx.churnRound[u.id] < t;
+      const sawNow = harmCount(rule, u.id, t) > 0, first = idx.harmSeen[u.id];
+      if (sawNow) now++; if (first != null && first <= t) ever++;
+      const cls = churned ? "churn" : sawNow ? "now" : first != null && first < t ? "before" : !active.has(u.id) ? "off" : "";
+      return `<button class="node ${cls} ${u.id === S.user ? "sel" : ""}" data-user="${u.id}" style="background:${COMM_COLORS[u.community % 3]}" title="${esc(u.name)} @${esc(u.handle)}${sawNow ? " · saw antisemitic post" : ""}" aria-label="${esc(u.name)}">${esc(initials(u))}</button>`;
+    }).join("");
+    $(note).textContent = `${now} users shown antisemitic posts this round; ${ever} so far.`;
+  }
+  $("commKey").innerHTML = [0, 1, 2].map((c) => `<span><span class="k" style="background:${COMM_COLORS[c]}"></span>${esc(commName(c))}</span>`).join(" ");
+}
+
+// ---------- charts ----------
+function lineChart(host, key) {
+  const sb = scen().series[S.before][key], sa = scen().series[S.after][key];
+  const W = 460, H = 200, L = 44, R = 70, T = 10, B = 24, n = sb.mean.length;
+  const mx = Math.max(1, ...sb.max, ...sa.max) * 1.08;
+  const x = (i) => L + i * (W - L - R) / Math.max(1, n - 1), y = (v) => H - B - v / mx * (H - T - B);
+  let g = "";
+  for (let k = 0; k <= 4; k++) { const v = mx * k / 4; g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#22384f"/><text x="${L - 6}" y="${y(v) + 3}" text-anchor="end">${nf(v)}</text>`; }
+  for (let i = 0; i < n; i += Math.ceil(n / 10)) g += `<text x="${x(i)}" y="${H - 6}" text-anchor="middle">${i}</text>`;
+  g += `<line x1="${x(5)}" x2="${x(5)}" y1="${T}" y2="${H - B}" stroke="#7c5b22" stroke-dasharray="3 3"/><text x="${x(5) + 3}" y="${T + 9}" style="fill:var(--control)">event</text>`;
+  g += `<line x1="${x(S.round)}" x2="${x(S.round)}" y1="${T}" y2="${H - B}" stroke="#416078"/>`;
+  const yb = y(sb.mean[n - 1]), ya = y(sa.mean[n - 1]);
+  const labelY = {before: Math.abs(yb - ya) < 12 ? Math.min(yb, ya) - 6 : yb, after: Math.abs(yb - ya) < 12 ? Math.max(yb, ya) + 8 : ya};
+  for (const [s, col, name] of [[sb, "var(--before)", "before"], [sa, "var(--after)", "after"]]) {
+    const band = s.max.map((v, i) => `${x(i)},${y(v)}`).concat(s.min.map((v, i) => `${x(i)},${y(v)}`).reverse()).join(" ");
+    g += `<polygon points="${band}" fill="${col}" opacity=".12"/>`;
+    g += `<polyline points="${s.mean.map((v, i) => `${x(i)},${y(v)}`).join(" ")}" fill="none" stroke="${col}" stroke-width="2"/>`;
+    g += `<text x="${W - R + 5}" y="${labelY[name] + 3}" style="fill:${col};font-size:11px">${name} ${nf(s.mean[n - 1])}</text>`;
+  }
+  for (let i = 0; i < n; i++) g += `<rect data-i="${i}" x="${x(i) - (W - L - R) / n / 2}" y="${T}" width="${(W - L - R) / n}" height="${H - T - B}" fill="transparent"/>`;
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${key}">${g}</svg>`;
+  const tip = $("tip");
+  host.querySelectorAll("rect[data-i]").forEach((el) => {
+    el.onmousemove = (e) => { const i = +el.dataset.i; tip.innerHTML = `Round ${i}<br><span style="color:var(--before)">before ${nf(sb.mean[i])}</span> · <span style="color:var(--after)">after ${nf(sa.mean[i])}</span>`; tip.classList.remove("hidden"); tip.style.left = e.clientX + 12 + "px"; tip.style.top = e.clientY - 10 + "px"; };
+    el.onmouseleave = () => tip.classList.add("hidden");
+    el.onclick = () => { S.round = +el.dataset.i; renderReplay(); renderCharts(); };
+  });
+}
+function renderCharts() {
+  lineChart($("chartHarm"), "harmful_impressions_cum"); lineChart($("chartEng"), "ordinary_engagement_cum");
+  lineChart($("chartCounter"), "counterspeech_exposure_cum"); lineChart($("chartReach"), "harmful_reach_cum");
+}
+
+// ---------- post inspector ----------
+function fillPosts() {
+  const keys = Object.keys(index(S.before).byKey);
+  const posts = rep(S.before).posts, old = $("post").value;
+  const order = ["harmful", "benign", "counter", "news"];
+  keys.sort((a, b) => order.indexOf(posts[index(S.before).byKey[a]].label) - order.indexOf(posts[index(S.before).byKey[b]].label) || a.localeCompare(b));
+  $("post").innerHTML = keys.map((k) => { const p = posts[index(S.before).byKey[k]]; return `<option value="${k}">${k} · ${p.control ? "control" : p.label} · ${esc(p.text.slice(0, 70))}</option>`; }).join("");
+  $("post").value = keys.includes(old) ? old : keys.includes("H1") ? "H1" : keys.includes("M1") ? "M1" : keys[0];
+}
+function renderPost() {
+  const key = $("post").value; if (!key) { $("postView").innerHTML = ""; return; }
+  const cols = [[S.before, "Before"], [S.after, "After"]].map(([rule, name]) => {
+    const pid = index(rule).byKey[key], r = rep(rule);
+    if (!pid) return `<div><h3>${name}</h3><p class="small">Not published in this run.</p></div>`;
+    const snaps = (r.snapshots || {})[pid] || [];
+    const at = snaps.filter((s) => s[0] <= S.round).pop() || snaps[0];
+    let impr = 0; for (const [t, f] of Object.entries(r.feeds)) if (+t <= S.round) for (const items of Object.values(f)) impr += items.filter((it) => it[0] == pid).length;
+    const e = at ? at[1] : [0, 0, 0], mx = Math.max(4, ...e);
+    const bars = e.map((n, c) => `<div class="bar"><span>${esc(commName(c))}</span><span class="track"><span class="fill" style="width:${100 * n / mx}%;background:${COMM_COLORS[c]}"></span></span><span>${n}</span></div>`).join("");
+    const pop = at ? at[4] : 0;
+    return `<div><h3>${name} · ${esc((DATA.rules[rule] || {}).label || rule)}</h3>
+      <p class="small">Distinct endorsers per community at round ${at ? at[0] : "-"}</p><div class="bars">${bars}</div>
+      <p class="small" style="margin-top:6px">Popularity term under this rule: <b>${pop}</b> (total endorsements ${e.reduce((s, v) => s + v, 0)}). Delivered ${impr} times up to round ${S.round}.</p></div>`;
+  });
+  const p = rep(S.before).posts[index(S.before).byKey[key]] || {};
+  const au = userById(p.author) || {};
+  $("postView").innerHTML = `<p class="small">${esc(key)} by ${esc(au.name || "")} (@${esc(au.handle || "")}, ${esc(commName(au.community))}) · published round ${p.round}${p.label === "harmful" ? " · <span style='color:var(--harm)'>placeholder antisemitic post</span>" : ""}</p><div class="cols">${cols.join("")}</div>`;
+}
+
+// ---------- leaderboard & users ----------
+function renderLeader() {
+  const rows = scen().summary, base = DATA.baseline;
+  const c = (v, goodDown, lim) => { if (v == null || !isFinite(v)) return `<td class="num">n/a</td>`; const bad = goodDown ? v > 1.02 : v < lim; const good = goodDown ? v < 0.98 : false; return `<td class="num"><span class="delta ${bad ? "bad" : good ? "good" : "neutral"}">${goodDown ? chg(v) : pct(v)}</span></td>`; };
+  $("leader").innerHTML = `<thead><tr><th>Algorithm</th><th class="num">Antisemitic impressions</th><th class="num">Reach</th><th class="num">Ordinary engagement kept</th><th class="num">Counterspeech kept</th><th class="num">Jewish community post reach</th><th>Automatic feedback</th></tr></thead><tbody>${
+    rows.map((r) => `<tr class="pick ${r.policy === S.after ? "cur" : ""}" data-rule="${r.policy}"><td>${esc((DATA.rules[r.policy] || {}).label || r.label)}</td>${
+      r.policy === base ? `<td class="num">${nf(r.harmful_impressions)}</td><td class="num">${nf(r.harmful_reach)}</td><td class="num">baseline</td><td class="num">baseline</td><td class="num">baseline</td>`
+      : c(r.harm_ratio, true) + c(r.reach_ratio, true) + c(r.engagement_ratio, false, .95) + c(r.counterspeech_ratio, false, .9) + c(r.control_ratio, false, .9)}<td class="small">${esc(r.verdict || "")}</td></tr>`).join("")}</tbody>`;
+  $("leader").querySelectorAll("tr[data-rule]").forEach((tr) => tr.onclick = () => { if (tr.dataset.rule === S.before) return; S.after = tr.dataset.rule; $("after").value = S.after; renderAll(); });
+}
+function renderUsers() {
+  const us = users(), jewish = us.filter((u) => u.jewish_identity).length;
+  $("usersNote").textContent = `${us.length} fictional users generated for seed ${scen().replay_seed}; signed up on OASIS with these names, handles and bios. ${jewish} have a Jewish-identity profile. Simulation roles are hidden from other users and never read by the ranker.`;
+  $("users").innerHTML = `<thead><tr><th></th><th>Name</th><th>Bio</th><th>Community</th><th class="num">Following</th><th class="num">Followers</th><th>Simulation role</th></tr></thead><tbody>${
+    us.map((u) => `<tr class="pick" data-user="${u.id}"><td>${avatar(u, "sm")}</td><td><b>${esc(u.name)}</b><br><span class="small">@${esc(u.handle)}</span></td><td>${esc(u.bio)}<br><span class="small">${esc(u.location)} · joined ${esc(u.joined)}</span></td><td>${esc(u.community_name || u.community)}</td><td class="num">${u.following}</td><td class="num">${u.followers}</td><td class="small">${u.cluster ? "coordinated cluster" : u.counter ? "counter-speaker" : "regular"} · activity ${u.activity}</td></tr>`).join("")}</tbody>`;
+}
+
+function download() {
+  const payload = {generated: DATA.generated, engine: DATA.engine, versions: DATA.versions, scenario: scen().key, before: S.before, after: S.after,
+    metrics: Object.fromEntries(["harmful_impressions", "harmful_reach", "ordinary_engagement", "counterspeech_exposure", "control_reach", "churned"].map((k) => [k, paired(k)])),
+    per_seed: scen().per_seed.filter((r) => r.policy === S.before || r.policy === S.after), config: scen().config, disclaimer: DATA.disclaimer};
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], {type: "application/json"}));
+  a.download = `feedbench_${scen().key}_${S.before}_vs_${S.after}.json`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// ---------- live network: playback of the OASIS events for both algorithms ----------
+const LIVE = {playing: false, round: 0, t: 0, last: 0, speed: 1, panes: [], raf: 0};
+const REDUCED = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+const MSG_COLOR = {harmful: "#fb7185", counter: "#70ead5", ordinary: "#7dd3fc", post: "#fbd28b"};
+const ROUND_MS = 4200, MAX_MOVING = 6;
+
+function liveEvents(rule) {
+  // per round: deliveries of antisemitic/counter posts (counted, shown as rings) and user actions
+  const key = S.sc + "|" + rule + "|ev";
+  if (CACHE.has(key)) return CACHE.get(key);
+  const r = rep(rule), rounds = scen().config.rounds, byRound = [], replyText = {}, acts = {};
+  for (const [pid, list] of Object.entries(r.replies || {})) for (const [rt, a, lab, txt] of list) replyText[pid + "|" + rt + "|" + a] = txt;
+  for (const x of r.actions) (acts[x[0]] ||= []).push(x);
+  for (let t = 0; t < rounds; t++) {
+    const ev = [];
+    for (const [a, items] of Object.entries(r.feeds[t] || {})) for (const it of items) {
+      const p = r.posts[it[0]];
+      if (p && (p.label === "harmful" || p.label === "counter")) ev.push({kind: "deliver", from: p.author, to: +a, label: p.label, phase: 0});
+    }
+    for (const [rt, a, act, pid, tl] of acts[t] || []) {
+      const p = r.posts[pid]; if (!p) continue;
+      if (act === "create_post") {
+        if (p.key === "organic") ev.push({kind: "post", from: a, to: a, label: p.label === "harmful" ? "harmful" : "post", text: p.text, phase: 1});
+      } else {
+        const lab = act === "comment" ? (tl || "benign") : p.label;
+        ev.push({kind: act, from: a, to: p.author, label: lab === "harmful" ? "harmful" : lab === "counter" ? "counter" : "ordinary",
+                 text: act === "comment" ? replyText[pid + "|" + t + "|" + a] || "" : "", phase: 1});
+      }
+    }
+    const rnd = (i) => { const x = Math.sin((t + 1) * 9301 + i * 49297) * 233280; return x - Math.floor(x); };
+    ev.forEach((e, i) => { e.start = e.phase === 0 ? 0.02 + 0.40 * rnd(i) : 0.45 + 0.50 * rnd(i + 999); });
+    ev.sort((a, b) => a.start - b.start);
+    byRound.push(ev);
+  }
+  const cum = [{harm: 0, eng: 0, counter: 0}];
+  for (let t = 0; t < rounds; t++) { const c = {...cum[t]}; for (const e of byRound[t]) countEvent(c, e); cum.push(c); }
+  const out = {byRound, cum};
+  CACHE.set(key, out);
+  return out;
+}
+function countEvent(c, e) {
+  if (e.kind === "deliver") { if (e.label === "harmful") c.harm++; else c.counter++; return; }
+  if (e.label === "harmful") return;                               // support for antisemitic posts is not ordinary engagement
+  if (e.kind === "comment" && e.label === "counter") c.counter++;
+  c.eng++;
+}
+
+function layoutNodes(w, h) {
+  // fixed positions: three community clusters, same for both panes and every round
+  // drawable band sits between the counters (top) and the message strip (bottom)
+  const top = 52, bottom = 74, bh = Math.max(120, h - top - bottom);
+  const centers = [[0.22, 0.70], [0.78, 0.70], [0.50, 0.27]], byC = {}, pos = {}, R = Math.min(w, bh);
+  users().forEach((u) => (byC[u.community % 3] ||= []).push(u));
+  for (const [c, list] of Object.entries(byC)) {
+    const [cx, cy] = centers[+c];
+    list.forEach((u, i) => {
+      const ang = i * 2.39996, rad = R * 0.23 * Math.sqrt((i + 0.5) / Math.max(list.length, 17));
+      pos[u.id] = {x: cx * w + Math.cos(ang) * rad * 1.25, y: top + cy * bh + Math.sin(ang) * rad};
+    });
+  }
+  return {pos, centers: centers.map(([x, y], c) => ({x: x * w, y: top + y * bh, name: commName(c)})), halo: R * 0.25};
+}
+
+function setupLive() {
+  LIVE.panes = [["before", "liveBefore", "hudBefore", "popBefore", "tickBefore"], ["after", "liveAfter", "hudAfter", "popAfter", "tickAfter"]]
+    .map(([side, cv, hud, pop, tick]) => ({side, canvas: $(cv), hud: $(hud), pop: $(pop), tick: $(tick), moving: [], flashes: [], exposed: {}, popUntil: 0}));
+  $("livePlay").onclick = () => LIVE.playing ? livePause() : livePlay();
+  $("liveRestart").onclick = () => { liveSeek(0); livePlay(); };
+  $("liveSpeed").onchange = (e) => { LIVE.speed = +e.target.value; };
+  for (const p of LIVE.panes) {
+    p.canvas.addEventListener("click", (e) => {
+      const rect = p.canvas.getBoundingClientRect(), x = e.clientX - rect.left, y = e.clientY - rect.top;
+      let best = null, bd = 14 * 14;
+      for (const [id, q] of Object.entries(p.layout.pos)) { const d = (q.x - x) ** 2 + (q.y - y) ** 2; if (d < bd) { bd = d; best = +id; } }
+      if (best != null) { S.user = best; fillUsers(); renderReplay(); liveDraw(performance.now()); }
+    });
+  }
+  // keep the drawing in step with its box (no stretching when the page reflows)
+  if (window.ResizeObserver) new ResizeObserver(liveResize).observe($("liveStages")); else window.addEventListener("resize", liveResize);
+  liveResize();
+}
+function liveResize() {
+  const dpr = window.devicePixelRatio || 1;
+  for (const p of LIVE.panes) {
+    const w = Math.round(p.canvas.clientWidth), h = Math.round(p.canvas.clientHeight);
+    if (!w || (w === p.w && h === p.h)) continue;
+    p.canvas.width = w * dpr; p.canvas.height = h * dpr; p.w = w; p.h = h;
+    p.ctx = p.canvas.getContext("2d"); p.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    p.layout = layoutNodes(w, h);
+  }
+  liveDraw(performance.now());
+}
+function liveReset() {
+  const label = (k) => (DATA.rules[k] || {}).label || k;
+  $("liveBeforeTitle").textContent = "Before · " + label(S.before);
+  $("liveAfterTitle").textContent = "After · " + label(S.after);
+  for (const p of LIVE.panes) if (p.w) p.layout = layoutNodes(p.w, p.h);
+  liveSeek(Math.min(S.round, scen().config.rounds - 1));
+}
+function liveSeek(round, t = 0) {
+  LIVE.round = round; LIVE.t = t;
+  for (const p of LIVE.panes) {
+    p.rule = p.side === "before" ? S.before : S.after;
+    const ev = liveEvents(p.rule);
+    p.count = {...ev.cum[round]}; p.done = 0; p.moving = []; p.flashes = []; p.exposed = {};
+    p.pop.classList.remove("show"); p.tick.innerHTML = "";
+    for (let k = 0; k < round; k++) for (const e of ev.byRound[k]) if (e.kind === "deliver" && e.label === "harmful") p.exposed[e.to] = (p.exposed[e.to] || 0) + 1;
+  }
+  liveHud(); liveDraw(performance.now());
+}
+function livePlay() {
+  if (LIVE.round >= scen().config.rounds - 1 && LIVE.t >= 1) liveSeek(0);
+  LIVE.playing = true; $("livePlay").textContent = "❚❚ Pause"; LIVE.last = performance.now();
+  cancelAnimationFrame(LIVE.raf); LIVE.raf = requestAnimationFrame(liveFrame);
+}
+function livePause() { LIVE.playing = false; $("livePlay").textContent = "▶ Play live"; }
+function liveFrame(now) {
+  const dt = Math.min(100, now - LIVE.last); LIVE.last = now;
+  if (LIVE.playing) {
+    LIVE.t += dt * LIVE.speed / ROUND_MS;
+    for (const p of LIVE.panes) liveEmit(p, now);
+    if (LIVE.t >= 1) {
+      if (LIVE.round >= scen().config.rounds - 1) { LIVE.t = 1; livePause(); }
+      else { LIVE.round++; LIVE.t = 0; for (const p of LIVE.panes) p.done = 0; S.round = LIVE.round; renderReplay(); }
+    }
+    liveHud();
+  }
+  liveDraw(now);
+  if (LIVE.playing || LIVE.panes.some((p) => p.moving.length || p.flashes.length)) LIVE.raf = requestAnimationFrame(liveFrame);
+}
+function liveEmit(p, now) {
+  const list = liveEvents(p.rule).byRound[LIVE.round] || [];
+  while (p.done < list.length && list[p.done].start <= LIVE.t) {
+    const e = list[p.done++];
+    countEvent(p.count, e);
+    if (e.kind === "deliver") {
+      if (e.label === "harmful") { p.exposed[e.to] = (p.exposed[e.to] || 0) + 1; p.flashes.push({id: e.to, t0: now, col: MSG_COLOR.harmful}); }
+      continue;
+    }
+    if (e.kind === "like") continue;                                  // counted, not animated
+    if (e.kind === "post") p.flashes.push({id: e.from, t0: now, col: MSG_COLOR.post});
+    else if (p.moving.length < MAX_MOVING) p.moving.push({e, t0: now, dur: REDUCED ? 1 : 1100 / Math.sqrt(LIVE.speed)});
+    if (e.kind === "comment" || e.kind === "post") livePopup(p, e, now);
+    liveTicker(p, e);
+  }
+}
+function who(id) { const u = userById(id) || {}; return "@" + (u.handle || id); }
+function liveText(e) {
+  const t = e.text || "";
+  return /HARMFUL PLACEHOLDER/.test(t) ? "⚠ antisemitic content (placeholder for an expert-reviewed example)" : t;
+}
+function liveTicker(p, e) {
+  const verb = {comment: "replied to", repost: "reposted", post: "posted"}[e.kind] || e.kind;
+  const div = document.createElement("div");
+  div.className = "tick"; div.style.setProperty("--edge", MSG_COLOR[e.label] || MSG_COLOR.ordinary);
+  div.textContent = `R${LIVE.round} · ${who(e.from)} ${verb}${e.kind === "post" ? "" : " " + who(e.to)}${e.text ? ": " + liveText(e) : ""}`;
+  p.tick.prepend(div);
+  while (p.tick.children.length > 4) p.tick.lastChild.remove();
+}
+function livePopup(p, e, now) {
+  if (now < p.popUntil - 600) return;               // one readable message at a time
+  const cls = e.label === "harmful" ? "harmful" : e.label === "counter" ? "counter" : "";
+  const tag = cls === "harmful" ? '<span class="chip harmful">antisemitic</span>' : cls === "counter" ? '<span class="chip counter">counterspeech</span>' : `<span class="chip slot">${e.kind === "post" ? "new post" : "reply"}</span>`;
+  const route = e.kind === "post" ? `${esc(who(e.from))} posted` : `${esc(who(e.from))} → ${esc(who(e.to))}`;
+  p.pop.className = "msg-pop " + cls;
+  p.pop.innerHTML = `<div class="route"><span>${route}</span>${tag}</div><div class="txt">${esc(liveText(e))}</div>`;
+  p.pop.classList.add("show");
+  const hold = 2400 / Math.max(1, LIVE.speed / 1.5);
+  p.popUntil = now + hold;
+  clearTimeout(p.popTimer);
+  p.popTimer = setTimeout(() => p.pop.classList.remove("show"), hold);
+}
+function liveHud() {
+  const [b, a] = LIVE.panes.map((p) => p.count), ex = LIVE.panes.map((p) => Object.keys(p.exposed).length);
+  LIVE.panes.forEach((p, i) => {
+    p.hud.innerHTML = `<span class="h">antisemitic seen <b>${nf(p.count.harm)}</b> · users <b>${ex[i]}</b></span><br><span class="e">engagement <b>${nf(p.count.eng)}</b></span> · <span class="c">counterspeech <b>${nf(p.count.counter)}</b></span>`;
+  });
+  const d = (after, before, goodDown) => {
+    if (!before) return `<span class="delta neutral">n/a</span>`;
+    const r = after / before - 1, good = goodDown ? r < -0.01 : r > -0.05, bad = goodDown ? r > 0.01 : r < -0.05;
+    return `<span class="delta ${good ? "good" : bad ? "bad" : "neutral"}">${r > 0 ? "+" : ""}${(r * 100).toFixed(0)}%</span>`;
+  };
+  $("impact").innerHTML = [
+    ["Antisemitic posts seen", b.harm, a.harm, true], ["Users exposed to antisemitism", ex[0], ex[1], true],
+    ["Ordinary engagement", b.eng, a.eng, false], ["Counterspeech seen", b.counter, a.counter, false],
+  ].map(([k, x, y, gd]) => `<div class="box"><div class="k">${k}</div><div class="pair"><span class="b"><b>${nf(x)}</b> before</span><span class="a"><b>${nf(y)}</b> after</span>${d(y, x, gd)}</div></div>`).join("");
+  $("liveRound").textContent = `Round ${LIVE.round} / ${scen().config.rounds - 1}${LIVE.round >= 5 ? " · after the bank collapse" : ""} · seed ${scen().replay_seed}`;
+}
+
+function liveDraw(now) {
+  for (const p of LIVE.panes) {
+    const ctx = p.ctx; if (!ctx || !p.layout) continue;
+    const {w, h} = p, L = p.layout;
+    ctx.globalAlpha = 1; ctx.fillStyle = "#06101c"; ctx.fillRect(0, 0, w, h);
+    ctx.font = "600 10px system-ui"; ctx.textAlign = "center";
+    for (const c of L.centers) {
+      ctx.fillStyle = "rgba(125,211,252,0.04)"; ctx.beginPath(); ctx.arc(c.x, c.y, L.halo, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "rgba(156,176,198,0.8)"; ctx.fillText(String(c.name).toUpperCase(), c.x, c.y - L.halo - 5);
+    }
+    // moving messages: a thin line and one dot travelling from sender to receiver
+    p.moving = p.moving.filter((m) => {
+      const k = Math.min(1, (now - m.t0) / m.dur), A = L.pos[m.e.from], B = L.pos[m.e.to];
+      if (!A || !B) return false;
+      const col = MSG_COLOR[m.e.label] || MSG_COLOR.ordinary;
+      ctx.strokeStyle = col; ctx.globalAlpha = 0.25; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
+      ctx.globalAlpha = 1; ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(A.x + (B.x - A.x) * k, A.y + (B.y - A.y) * k, 3.5, 0, Math.PI * 2); ctx.fill();
+      if (k >= 1) { p.flashes.push({id: m.e.to, t0: now, col}); return false; }
+      return true;
+    });
+    ctx.globalAlpha = 1;
+    const idx = index(p.rule || S.before), active = idx.active[LIVE.round] || new Set(), churn = idx.churnRound;
+    const flashing = {};
+    p.flashes = p.flashes.filter((f) => { const k = (now - f.t0) / 600; if (k >= 1) return false; flashing[f.id] = f; return true; });
+    for (const u of users()) {
+      const q = L.pos[u.id]; if (!q) continue;
+      const gone = churn[u.id] != null && churn[u.id] < LIVE.round, on = active.has(u.id);
+      const r = Math.max(2.2, Math.min(4.5, 90 / Math.sqrt(users().length) / 3));
+      ctx.globalAlpha = gone ? 0.15 : on ? 1 : 0.4;
+      ctx.fillStyle = "#cfe3f5"; ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, Math.PI * 2); ctx.fill();
+      const ex = p.exposed[u.id] || 0;
+      if (ex) { ctx.strokeStyle = MSG_COLOR.harmful; ctx.lineWidth = Math.min(3, 1 + ex * 0.2); ctx.beginPath(); ctx.arc(q.x, q.y, r + 2.5, 0, Math.PI * 2); ctx.stroke(); }
+      const f = flashing[u.id];
+      if (f) { const k = (now - f.t0) / 600; ctx.globalAlpha = 1 - k; ctx.strokeStyle = f.col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(q.x, q.y, r + 3 + k * 8, 0, Math.PI * 2); ctx.stroke(); }
+      if (u.id === S.user) { ctx.globalAlpha = 1; ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(q.x, q.y, r + 6, 0, Math.PI * 2); ctx.stroke(); }
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+function init() {
+  if (!DATA) { document.body.innerHTML = "<p style='padding:20px'>No data embedded. Run <code>python build_lab.py</code>.</p>"; return; }
+  const v = DATA.versions || {};
+  $("engine").textContent = `${DATA.engine} · camel-oasis ${v["camel-oasis"] || "?"} · camel-ai ${v["camel-ai"] || "?"} · Python ${v.python || "?"} · generated ${DATA.generated} · community cap ${DATA.cap}`;
+  $("limits").innerHTML = [
+    DATA.disclaimer,
+    "Users, names, bios, posts and the Northfield bank collapse are fictional. Antisemitic posts are placeholders until experts supply reviewed examples.",
+    "Scripted agents follow transparent probabilistic rules (network.py, agents.py); LLM agents are a separate configuration (run_llm.py).",
+    "Feeds are delivered by a custom OASIS Platform in exactly the order the ranking rule computes; everything else is identical between the two algorithms, including each user's random draws.",
+    "Assumption: seeing antisemitic posts ends some sessions (15%) and makes a few users leave (3%).",
+    "Communities are assigned, not detected. Few seeds measure simulation variability only.",
+  ].map((s) => `<li>${esc(s)}</li>`).join("");
+  setupControls(); pickDefaultUser(); setupLive(); renderAll();
+}
+init();
+</script>
+</body>
+</html>
