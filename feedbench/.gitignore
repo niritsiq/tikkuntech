@@ -16,3 +16,7 @@ lab_import_test.html
 results/lab_quick.json
 results/lab_llm_stub.json
 data/twitter_users_seed*.csv
+
+# secrets (API keys)
+.env
+*.env
