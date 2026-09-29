@@ -157,6 +157,7 @@ a { color: var(--accent); }
       </div>
       <span class="muted" id="fixture-desc"></span>
     </div>
+    <p class="muted">Metrics below cover the complete six-round run for the selected seed. The replay controls only the displayed round.</p>
     <div class="tiles" id="tiles"></div>
     <ul class="findings" id="findings"></ul>
   </section>
@@ -307,13 +308,14 @@ function setupStatic() {
     .map(([k, r]) => `<option value="${k}">${esc(r.name)}</option>`).join("");
   $("rule-select").onchange = updateRuleForm;
   $("run-lab").onclick = runLab;
-  $("reset-lab").onclick = () => { S.bundle = S.prereg; clampState(); renderAll(); };
+  $("reset-lab").onclick = () => { stop(); S.bundle = S.prereg; clampState(); renderAll(); };
   $("round").oninput = (e) => { stop(); S.round = +e.target.value; renderReplay(); renderInspector(); };
   $("play").onclick = () => S.timer ? stop() : play();
-  $("seed-select").onchange = (e) => { S.seedIdx = +e.target.value; renderAll(); };
+  $("seed-select").onchange = (e) => { stop(); S.seedIdx = +e.target.value; renderAll(); };
   $("post-select").onchange = (e) => { S.post = e.target.value; renderInspector(); };
   $("feedback-form").onsubmit = saveFeedback;
   $("download-log").onclick = downloadLog;
+  document.addEventListener("visibilitychange", () => { if (document.hidden) stop(); });
   updateRuleForm();
   if (!S.server) {
     $("run-lab").disabled = true;
@@ -351,7 +353,7 @@ function renderHeader() {
   $("fixture-tabs").innerHTML = S.bundle.scenarios.map((s, i) =>
     `<button role="tab" aria-selected="${i === S.fixture}" data-i="${i}">${esc(s.name)}</button>`).join("");
   $("fixture-tabs").querySelectorAll("button").forEach((b) => b.onclick = () => {
-    S.fixture = +b.dataset.i; S.post = scenario().focus_post_ids[0]; S.agent = null; renderAll();
+    stop(); S.fixture = +b.dataset.i; S.post = scenario().focus_post_ids[0]; S.agent = null; renderAll();
   });
   $("seed-select").innerHTML = scenario().runs.map((r, i) =>
     `<option value="${i}" ${i === S.seedIdx ? "selected" : ""}>${r.seed}${i === 0 ? " (declared replay seed)" : ""}</option>`).join("");
@@ -426,7 +428,7 @@ function renderReplay() {
     S.agent = S.agent === el.dataset.agent ? null : el.dataset.agent; renderReplay();
   });
   $("panels").querySelectorAll("button[data-post]").forEach((el) => el.onclick = () => {
-    S.post = el.dataset.post; renderInspector(); $("inspector").scrollIntoView({ behavior: "smooth", block: "center" });
+    S.post = el.dataset.post; renderInspector(); $("inspector").scrollIntoView({ behavior: scrollBehavior(), block: "center" });
   });
 }
 
@@ -437,10 +439,11 @@ function play() {
     S.round += 1; renderReplay(); renderInspector();
     if (S.round >= S.bundle.config.rounds) stop();
   };
-  step();
   S.timer = setInterval(step, 1100);
+  step();
 }
 function stop() { clearInterval(S.timer); S.timer = null; $("play").innerHTML = "&#9654; Replay"; }
+function scrollBehavior() { return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"; }
 
 function scoreBreakdown(counts, ruleKey, cap) {
   const parts = counts.map((n) => {
@@ -495,7 +498,7 @@ async function runLab() {
     S.bundle = data; clampState(); addLabRun(data);
     $("lab-state").textContent = "Done. The dashboard now shows this run.";
     renderAll();
-    $("tiles").scrollIntoView({ behavior: "smooth", block: "center" });
+    $("tiles").scrollIntoView({ behavior: scrollBehavior(), block: "center" });
   } catch (error) {
     $("lab-error").textContent = error.message; $("lab-state").textContent = "";
   } finally { $("run-lab").disabled = !S.server; }
