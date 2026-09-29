@@ -1,0 +1,18 @@
+# local environment and caches
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+log/
+
+# OASIS run databases (large; regenerate with build_lab.py). They may contain
+# un-pseudonymized profile data from OASIS dataset files.
+runs/
+runs_*/
+
+# scratch outputs
+lab_preview.html
+lab_import_test.html
+results/lab_quick.json
+results/lab_llm_stub.json
+data/twitter_users_seed*.csv

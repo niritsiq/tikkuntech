@@ -1,0 +1,608 @@
+<title>TikkunTech Ranking Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: research-instrument page. Summary tiles -> side-by-side replay of A and B -> seed-averaged charts -> post inspector -> sensitivity & limits. */
+:root {
+  --bg: #f4f6f7; --surface: #ffffff; --surface-2: #eef1f3; --ink: #14181c; --ink-2: #48525b; --muted: #75808a;
+  --line: #dde2e6; --line-strong: #c4ccd3; --accent: #1d4f7c;
+  --a: #2a78d6; --b: #eb6834; --crit: #d03b3b; --crit-soft: #fbe9e9; --good: #006300; --good-soft: #e7f3e7;
+  --ctrl: #4a3aa7; --ctrl-soft: #ecebf8; --warn: #8a5a00; --warn-soft: #fbf1dc;
+  --f-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --f-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1214; --surface: #181c1f; --surface-2: #20252a; --ink: #eef1f4; --ink-2: #bcc5cd; --muted: #8a949d;
+  --line: #2a3035; --line-strong: #3a4148; --accent: #8fb9e4;
+  --a: #3987e5; --b: #d95926; --crit: #e25c5c; --crit-soft: #3a1d1e; --good: #3fbf3f; --good-soft: #1b2e1b;
+  --ctrl: #9085e9; --ctrl-soft: #25223d; --warn: #e3ab3c; --warn-soft: #33290f; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0f1214; --surface: #181c1f; --surface-2: #20252a; --ink: #eef1f4; --ink-2: #bcc5cd; --muted: #8a949d;
+  --line: #2a3035; --line-strong: #3a4148; --accent: #8fb9e4;
+  --a: #3987e5; --b: #d95926; --crit: #e25c5c; --crit-soft: #3a1d1e; --good: #3fbf3f; --good-soft: #1b2e1b;
+  --ctrl: #9085e9; --ctrl-soft: #25223d; --warn: #e3ab3c; --warn-soft: #33290f; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 64px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+section { min-width: 0; grid-template-columns: minmax(0, 1fr); }
+.two > .card, .card.stack { min-width: 0; grid-template-columns: minmax(0, 1fr); }
+.panel .panel-head { flex-direction: column; align-items: flex-start; gap: 4px; }
+.stack { display: grid; gap: 10px; align-content: start; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: clamp(1.6rem, 3.2vw, 2.3rem); }
+h2 { font-size: 1.35rem; }
+h3 { font-size: 1.02rem; font-family: var(--f-body); font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.lede { color: var(--ink-2); max-width: 70ch; }
+.mono, code { font-family: var(--f-mono); font-size: .86em; }
+.num { font-variant-numeric: tabular-nums; }
+section { display: grid; gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; min-width: 0; }
+.muted { color: var(--muted); }
+.small { font-size: .84rem; }
+
+header.top { display: grid; gap: 12px; }
+.badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.badge { font-size: .76rem; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--ink-2); background: var(--surface); }
+.badge.replay { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab { font: inherit; font-size: .9rem; padding: 8px 13px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.tab:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, .dot:focus-visible, .feed li:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.scen-head { display: grid; gap: 6px; }
+.verdict { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: .92rem; padding: 6px 12px; border-radius: 8px; width: fit-content; }
+.v-good { background: var(--good-soft); color: var(--good); }
+.v-bad { background: var(--crit-soft); color: var(--crit); }
+.v-mixed { background: var(--warn-soft); color: var(--warn); }
+
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 12px; }
+.rule { display: grid; gap: 4px; border-left: 3px solid var(--a); padding: 4px 0 4px 12px; }
+.rule.b { border-left-color: var(--b); }
+.rule .f { font-family: var(--f-mono); font-size: .95rem; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 12px; }
+.tile { display: grid; gap: 6px; align-content: start; }
+.tile .k { font-size: .82rem; color: var(--ink-2); font-weight: 600; }
+.tile .v { font-family: var(--f-display); font-size: 2.3rem; font-weight: 700; line-height: 1; }
+.tile .raw { font-size: .84rem; color: var(--ink-2); }
+.tile .range { font-size: .8rem; color: var(--muted); }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-size: .74rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; width: fit-content; }
+.chip.good { background: var(--good-soft); color: var(--good); }
+.chip.bad { background: var(--crit-soft); color: var(--crit); }
+.chip.na { background: var(--surface-2); color: var(--muted); }
+.support { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: .86rem; color: var(--ink-2); }
+.support b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.btn { font: inherit; font-size: .9rem; font-weight: 600; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--ink); background: var(--ink); color: var(--bg); cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line-strong); font-weight: 500; }
+input[type=range] { flex: 1 1 220px; accent-color: var(--accent); min-width: 0; }
+.round-label { font-family: var(--f-mono); font-size: .9rem; min-width: 11ch; }
+
+.panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(330px, 100%), 1fr)); gap: 14px; }
+.panel { display: grid; gap: 12px; align-content: start; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: 0; }
+.pstats { display: flex; gap: 16px; font-size: .84rem; color: var(--ink-2); flex-wrap: wrap; }
+.pstats b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.net { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.comm { display: grid; gap: 6px; align-content: start; background: var(--surface-2); border-radius: 8px; padding: 8px; }
+.comm .cl { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+.dots { display: flex; flex-wrap: wrap; gap: 5px; }
+.dot { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--line-strong); background: transparent; padding: 0; cursor: pointer; }
+.dot.active { background: var(--muted); border-color: var(--muted); }
+.dot.exposed { background: var(--crit); border-color: var(--crit); }
+.dot.cluster { border-radius: 3px; }
+.dot.churned { opacity: .25; }
+.dot.sel { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .78rem; color: var(--ink-2); align-items: center; }
+.legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--line-strong); margin-right: 5px; vertical-align: -1px; }
+.legend i.active { background: var(--muted); border-color: var(--muted); }
+.legend i.exposed { background: var(--crit); border-color: var(--crit); }
+.legend i.cluster { border-radius: 2px; }
+
+.feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.feed li { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; background: var(--surface); }
+.feed li:hover { border-color: var(--line-strong); }
+.feed li.harm { border-color: var(--crit); background: var(--crit-soft); }
+.feed .pos { font-family: var(--f-mono); font-size: .75rem; color: var(--muted); grid-row: span 2; padding-top: 2px; }
+.feed .txt { font-size: .86rem; min-width: 0; overflow-wrap: anywhere; }
+.feed .meta { font-size: .74rem; color: var(--muted); font-family: var(--f-mono); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.lab { font-size: .68rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-right: 6px; text-transform: uppercase; letter-spacing: .04em; }
+.lab.harmful { background: var(--crit); color: #fff; }
+.lab.counter { background: var(--good-soft); color: var(--good); }
+.lab.news { background: var(--surface-2); color: var(--ink-2); }
+.lab.benign { background: var(--surface-2); color: var(--ink-2); }
+.lab.control { background: var(--ctrl-soft); color: var(--ctrl); }
+.empty { font-size: .86rem; color: var(--muted); padding: 10px; border: 1px dashed var(--line-strong); border-radius: 8px; }
+
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 12px; }
+.chart { position: relative; display: grid; gap: 6px; }
+.chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart .ax { fill: var(--muted); font-size: 10px; font-family: var(--f-body); }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .base { stroke: var(--line-strong); stroke-width: 1; }
+.chart .ev { stroke: var(--muted); stroke-dasharray: 3 3; }
+.chart .now { stroke: var(--ink); stroke-width: 1; opacity: .5; }
+.chart .endlab { font-size: 10.5px; font-weight: 600; font-family: var(--f-body); fill: var(--ink-2); }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--bg); font-size: .76rem; padding: 6px 8px; border-radius: 6px; white-space: nowrap; transform: translate(-50%, -110%); font-variant-numeric: tabular-nums; }
+.keyrow { display: flex; gap: 14px; font-size: .8rem; color: var(--ink-2); flex-wrap: wrap; }
+
+.insp { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 760px) { .insp { grid-template-columns: minmax(0, 1fr); } }
+.insp-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+#post-select { flex: 1 1 220px; min-width: 0; }
+select { font: inherit; font-size: .88rem; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); max-width: 100%; }
+.calc { font-family: var(--f-mono); font-size: .86rem; background: var(--surface-2); border-radius: 8px; padding: 12px; display: grid; gap: 6px; overflow-x: auto; }
+.calc .row { display: flex; justify-content: space-between; gap: 4px 12px; flex-wrap: wrap; }
+.calc .a { color: var(--a); font-weight: 600; } .calc .b { color: var(--b); font-weight: 600; }
+.ptext { font-size: .92rem; overflow-wrap: anywhere; }
+
+table { border-collapse: collapse; width: 100%; font-size: .86rem; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+th { font-size: .74rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+.tablewrap { overflow-x: auto; }
+.bar { display: inline-block; height: 8px; border-radius: 0 4px 4px 0; background: var(--b); vertical-align: middle; margin-right: 6px; }
+.bar.base { background: var(--line-strong); }
+
+.findings { display: grid; gap: 10px; margin: 0; padding-left: 20px; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px; }
+ul.plain { margin: 0; padding-left: 18px; display: grid; gap: 6px; color: var(--ink-2); }
+pre { margin: 0; background: var(--surface-2); padding: 12px; border-radius: 8px; overflow-x: auto; font-size: .8rem; line-height: 1.45; }
+footer { font-size: .8rem; color: var(--muted); display: grid; gap: 4px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">TikkunTech Ranking Lab · hackathon prototype</div>
+    <h1>Does capping same-community endorsements slow antisemitic spread?</h1>
+    <p class="lede">We compare two feed-ranking rules in the same synthetic social network and measure antisemitic exposure and the cost to ordinary participation. The replay below shows saved, computed runs. It illustrates a mechanism under declared assumptions; it does not estimate effects on a real platform or establish a legal conclusion.</p>
+    <div class="badges">
+      <span class="badge replay">Replay of computed runs</span>
+      <span class="badge">Engine: CAMEL OASIS</span>
+      <span class="badge" id="b-scale">50 synthetic agents · 20 rounds · 5 seeds</span>
+      <span class="badge">Antisemitic posts are placeholders for expert-reviewed text</span>
+    </div>
+  </header>
+
+  <section aria-label="Scenario">
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="scen-head">
+      <h2 id="s-title"></h2>
+      <p class="lede" id="s-question"></p>
+      <div id="s-verdict"></div>
+    </div>
+  </section>
+
+  <section class="card" aria-label="Ranking rules">
+    <div class="rules">
+      <div class="rule"><span class="eyebrow" style="color:var(--a)">Rule A · baseline</span><span class="f">popularity = e₀ + e₁ + e₂</span><span class="small muted">Every distinct like or repost adds to the boost.</span></div>
+      <div class="rule b"><span class="eyebrow" style="color:var(--b)">Rule B · intervention</span><span class="f" id="rule-b-f">popularity = Σ min(2, eᵢ)</span><span class="small muted">Endorsements beyond the cap from one community stop adding boost.</span></div>
+    </div>
+    <p class="small muted">eᵢ = distinct agents in network community i who liked or reposted the post. Follow bonus, "endorsed by people you follow", past engagement with the author, recency, feed layout (2 in-network, 2 recommended, 1 random exploration slot) and every agent's random draws are identical under A and B. Neither rule sees the antisemitism label.</p>
+  </section>
+
+  <section aria-label="Headline results">
+    <div class="tiles" id="tiles"></div>
+    <div class="support" id="support"></div>
+  </section>
+
+  <section class="card" aria-label="Replay">
+    <div class="panel-head">
+      <h2>Replay: same agents, same starting posts</h2>
+      <span class="small muted" id="replay-note"></span>
+    </div>
+    <div class="controls">
+      <button class="btn" id="play" type="button">Play replay</button>
+      <input type="range" id="round" min="0" max="19" value="0" aria-label="Round">
+      <span class="round-label" id="round-label">Round 0</span>
+      <button class="btn ghost" id="reset" type="button">Reset</button>
+    </div>
+    <div class="legend">
+      <span><i></i>offline this round</span><span><i class="active"></i>opened the app</span><span><i class="exposed"></i>shown ≥1 antisemitic post</span><span><i class="cluster"></i>cluster member (square)</span><span class="muted">Click an agent to see the exact feed it received.</span>
+    </div>
+    <div class="panels" id="panels"></div>
+  </section>
+
+  <section aria-label="Comparison charts">
+    <div class="panel-head"><h2>Across all seeds</h2>
+      <div class="keyrow"><span><span class="swatch" style="background:var(--a)"></span>A · total endorsements</span><span><span class="swatch" style="background:var(--b)"></span>B · capped per community</span><span class="muted">Line = mean of seeds, band = min–max, dashed = event</span></div>
+    </div>
+    <div class="charts" id="charts"></div>
+  </section>
+
+  <section class="card" aria-label="Post inspector">
+    <div class="panel-head"><h2>Post inspector: how concentrated endorsements change the score</h2></div>
+    <div class="insp-controls">
+      <button class="btn ghost" type="button" id="pick-harm">Most-endorsed antisemitic post</button>
+      <button class="btn ghost" type="button" id="pick-ctrl">Benign control (M1)</button>
+      <label class="small muted" for="post-select">or pick a post</label>
+      <select id="post-select"></select>
+      <label class="small muted" for="run-select">history from run</label>
+      <select id="run-select"><option value="total_endorsements">A</option><option value="community_capped">B</option></select>
+    </div>
+    <div class="insp">
+      <div style="display:grid;gap:10px;min-width:0">
+        <p class="ptext" id="p-text"></p>
+        <div class="calc" id="p-calc"></div>
+        <p class="small muted" id="p-note"></p>
+      </div>
+      <div class="chart" id="p-chart"></div>
+    </div>
+  </section>
+
+  <section class="two" aria-label="Sensitivity and findings">
+    <div class="card stack">
+      <h2>Cap sensitivity</h2>
+      <p class="small muted" id="sens-note"></p>
+      <div class="tablewrap"><table id="sens"></table></div>
+    </div>
+    <div class="card stack">
+      <h2>Measured results</h2>
+      <ol class="findings" id="findings"></ol>
+    </div>
+  </section>
+
+  <section class="two" aria-label="Assumptions and next steps">
+    <div class="card stack">
+      <h2>Declared assumptions and limits</h2>
+      <ul class="plain">
+        <li>Agents are scripted, transparent behaviour rules, not a model of real people. An LLM action policy is a separate configuration, not used here.</li>
+        <li>Communities are assigned, not detected. Cluster size, placement and how strongly it endorses are scenario inputs.</li>
+        <li>Seeing antisemitic posts ends some sessions (15%) and makes a few agents leave (3%). This is an assumption, and it links exposure to participation.</li>
+        <li>Counterspeech replies are shown under the post they answer, so fewer antisemitic impressions also means fewer counterspeech replies seen.</li>
+        <li>Five seeds measure simulation variability only. They say nothing about how well the simulator represents humans.</li>
+        <li>Harmful texts are placeholders. The expert team replaces them with reviewed examples and records label rationales and disagreements.</li>
+      </ul>
+    </div>
+    <div class="card stack">
+      <h2>Test your own rule</h2>
+      <p class="small">Add a popularity function in <code>feedbench/ranking.py</code>, register it, then rerun and rebuild this page.</p>
+<pre>def pop_my_rule(p, cfg):
+    # p.endorsers_by_comm = {community: distinct endorsers}
+    return sum(min(cfg.community_cap, e) ** 0.5
+               for e in p.endorsers_by_comm.values())
+
+POPULARITY["my_rule"] = pop_my_rule
+
+python run_benchmark.py --cap 3 --extra chronological
+python build_replay.py</pre>
+      <div class="controls"><button class="btn ghost" type="button" id="copy-csv">Copy summary as CSV</button><span class="small muted" id="copy-msg"></span></div>
+      <p class="small muted">Full exports sit next to this page in <code>results/</code>: benchmark.json, summary.csv, runs_per_seed.csv, cap_sensitivity.csv, plus one OASIS SQLite database per run in <code>runs/</code>.</p>
+    </div>
+  </section>
+
+  <section class="card" aria-label="Mentor question" style="display:grid;gap:8px">
+    <div class="eyebrow">Key mentor question</div>
+    <p>What evidence and safeguards would make this comparison useful for policy discussion, especially when a community cap can also reduce the reach of legitimate minority-community speech?</p>
+  </section>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const A = "total_endorsements", B = "community_capped";
+const NAMES = { [A]: "A · Total endorsements", [B]: "B · Capped per community" };
+let S = null, t = 0, timer = null, selAgent = null, inspect = { run: A, pid: null };
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = (x, d = 0) => (x == null || isNaN(x)) ? "–" : Number(x).toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: d });
+const pct = r => (r == null || isNaN(r)) ? "–" : (r >= 1 ? "+" : "−") + Math.abs(Math.round((r - 1) * 100)) + "%";
+const kept = r => (r == null || isNaN(r)) ? "–" : Math.round(r * 100) + "%";
+const sum = (s, pol) => s.summary.find(r => r.policy === pol);
+
+function init() {
+  const tabs = $("tabs");
+  DATA.scenarios.forEach((s, i) => {
+    const b = document.createElement("button");
+    b.className = "tab"; b.type = "button"; b.role = "tab"; b.id = "tab-" + s.key; b.textContent = s.title;
+    b.addEventListener("click", () => selectScenario(i));
+    tabs.appendChild(b);
+  });
+  $("play").addEventListener("click", togglePlay);
+  $("reset").addEventListener("click", () => { stop(); setRound(0); });
+  $("round").addEventListener("input", e => { stop(); setRound(+e.target.value); });
+  $("pick-harm").addEventListener("click", () => { inspect.run = $("run-select").value; inspect.pid = topHarmful(inspect.run); renderInspector(); });
+  $("pick-ctrl").addEventListener("click", () => { inspect.run = $("run-select").value; inspect.pid = findKey(inspect.run, "M1"); renderInspector(); });
+  $("post-select").addEventListener("change", e => { inspect.pid = +e.target.value; renderInspector(); });
+  $("run-select").addEventListener("change", e => {
+    const old = S.replay[inspect.run].posts[inspect.pid];
+    inspect.run = e.target.value;
+    inspect.pid = (old && old.key && old.key !== "organic") ? findKey(inspect.run, old.key) : topHarmful(inspect.run) ?? findKey(inspect.run, "M1");
+    renderInspector();
+  });
+  $("copy-csv").addEventListener("click", copyCsv);
+  const c = DATA.scenarios[0].config;
+  $("b-scale").textContent = `${c.network.n_agents} synthetic agents · ${c.rounds} rounds · ${c.seeds.length} seeds per rule`;
+  $("foot").innerHTML = `<span>Generated ${esc(DATA.generated)} · ${esc(DATA.engine)} · camel-oasis ${esc(DATA.versions["camel-oasis"])}, camel-ai ${esc(DATA.versions["camel-ai"])}, Python ${esc(DATA.versions.python)}</span><span>${esc(DATA.disclaimer)}</span>`;
+  renderSensitivity(); renderFindings();
+  const hash = (location.hash || "").slice(1);
+  const idx = Math.max(0, DATA.scenarios.findIndex(s => s.key === hash));
+  selectScenario(idx);
+}
+
+function selectScenario(i) {
+  stop();
+  S = DATA.scenarios[i];
+  document.querySelectorAll(".tab").forEach((b, j) => b.setAttribute("aria-selected", j === i ? "true" : "false"));
+  $("s-title").textContent = S.title;
+  $("s-question").textContent = S.question;
+  $("rule-b-f").textContent = `popularity = Σ min(${S.config.ranking.community_cap}, eᵢ)`;
+  $("round").max = S.config.rounds - 1;
+  $("replay-note").textContent = `Replay: seed ${S.replay_seed}. Event at round ${S.config.rounds ? 5 : ""}.`;
+  renderVerdict(); renderTiles();
+  selAgent = defaultAgent();
+  buildPanels();
+  inspect.run = $("run-select").value = A;
+  inspect.pid = topHarmful(A) ?? findKey(A, "M1");
+  fillPostSelect(); renderInspector();
+  setRound(S.config.rounds - 1);
+}
+
+function renderVerdict() {
+  const r = sum(S, B);
+  const cls = r.harm_ratio == null ? (r.engagement_ratio >= S.config.min_engagement_retained ? "v-mixed" : "v-bad")
+    : (r.harm_ratio <= 1 - S.config.target_harm_reduction ? (r.counterspeech_ratio >= S.config.min_counterspeech_retained ? "v-good" : "v-mixed") : "v-bad");
+  const icon = cls === "v-good" ? "✓" : cls === "v-bad" ? "✕" : "!";
+  $("s-verdict").innerHTML = `<span class="verdict ${cls}"><span aria-hidden="true">${icon}</span>Rule B: ${esc(r.verdict)}</span>`;
+}
+
+function tile(k, v, raw, range, ok, okText) {
+  const chip = ok == null ? `<span class="chip na">no target to test</span>` : ok ? `<span class="chip good">✓ ${okText[0]}</span>` : `<span class="chip bad">✕ ${okText[1]}</span>`;
+  return `<div class="card tile"><span class="k">${k}</span><span class="v num">${v}</span><span class="raw num">${raw}</span><span class="range num">${range}</span>${chip}</div>`;
+}
+
+function renderTiles() {
+  const a = sum(S, A), b = sum(S, B), c = S.config, n = c.seeds.length;
+  const harmTile = a.harmful_impressions > 0
+    ? tile("Antisemitic exposure (B vs A)", pct(b.harm_ratio),
+        `${fmt(b.harmful_impressions)} vs ${fmt(a.harmful_impressions)} feed slots · mean of ${n} seeds`,
+        `per-seed range ${pct(b.harm_ratio_min)} to ${pct(b.harm_ratio_max)}`,
+        b.harm_ratio <= 1 - c.target_harm_reduction, [`meets ${Math.round(c.target_harm_reduction * 100)}% reduction target`, `misses ${Math.round(c.target_harm_reduction * 100)}% reduction target`])
+    : tile("Antisemitic exposure", "0", "No antisemitic posts in this scenario", "Cost-only test", null);
+  $("tiles").innerHTML = harmTile +
+    tile("Ordinary engagement retained", kept(b.engagement_ratio),
+      `${fmt(b.ordinary_engagement)} vs ${fmt(a.ordinary_engagement)} likes, reposts, replies, posts`,
+      `per-seed range ${kept(b.engagement_ratio_min)} to ${kept(b.engagement_ratio_max)}`,
+      b.engagement_ratio >= c.min_engagement_retained, [`≥ ${Math.round(c.min_engagement_retained * 100)}% target`, `below ${Math.round(c.min_engagement_retained * 100)}% target`]) +
+    tile("Counterspeech exposure retained", kept(b.counterspeech_ratio),
+      `posts ${fmt(b.counterspeech_post_impressions)} vs ${fmt(a.counterspeech_post_impressions)} · replies shown ${fmt(b.counterspeech_replies_shown)} vs ${fmt(a.counterspeech_replies_shown)}`,
+      `per-seed range ${kept(b.counterspeech_ratio_min)} to ${kept(b.counterspeech_ratio_max)}`,
+      b.counterspeech_ratio >= c.min_counterspeech_retained, [`≥ ${Math.round(c.min_counterspeech_retained * 100)}% target`, `below ${Math.round(c.min_counterspeech_retained * 100)}% target`]);
+  $("support").innerHTML =
+    `<span>Agents reached by antisemitic posts: <b>${fmt(b.harmful_reach, 1)}</b> vs <b>${fmt(a.harmful_reach, 1)}</b> of ${c.network.n_agents}</span>` +
+    `<span>Benign control post M1 reach: <b>${fmt(b.control_reach, 1)}</b> vs <b>${fmt(a.control_reach, 1)}</b> agents (seed range B ${b.control_reach_min}–${b.control_reach_max})</span>` +
+    `<span>Agents who left: <b>${fmt(b.churned, 1)}</b> vs <b>${fmt(a.churned, 1)}</b></span>` +
+    `<span class="muted">Thresholds were set before the runs.</span>`;
+}
+
+/* ---------- replay ---------- */
+function exposedAt(pol, round) {
+  const R = S.replay[pol], f = R.feeds[round] || {}, out = new Set();
+  for (const [ag, items] of Object.entries(f)) if (items.some(it => (R.posts[it[0]] || {}).label === "harmful")) out.add(+ag);
+  return out;
+}
+function churnedBy(pol, round) {
+  return new Set(S.replay[pol].sessions.filter(s => s[3] && s[0] <= round).map(s => s[1]));
+}
+function cumHarm(pol, round) {
+  const R = S.replay[pol]; let n = 0;
+  for (let r = 0; r <= round; r++) for (const items of Object.values(R.feeds[r] || {})) for (const it of items) if ((R.posts[it[0]] || {}).label === "harmful") n++;
+  return n;
+}
+function defaultAgent() {
+  const R = S.replay[A], counts = {};
+  for (const f of Object.values(R.feeds)) for (const [ag, items] of Object.entries(f))
+    counts[ag] = (counts[ag] || 0) + items.filter(it => (R.posts[it[0]] || {}).label === "harmful").length + 0.01 * items.length;
+  const pool = S.agents.filter(a => !a.cluster);
+  pool.sort((x, y) => (counts[y.id] || 0) - (counts[x.id] || 0));
+  return pool[0].id;
+}
+
+function buildPanels() {
+  $("panels").innerHTML = [A, B].map(pol => `
+    <div class="panel" data-pol="${pol}">
+      <div class="panel-head"><h3><span class="swatch" style="background:var(${pol === A ? "--a" : "--b"})"></span>${NAMES[pol]}</h3>
+        <div class="pstats"><span>antisemitic slots this round <b data-k="now">0</b></span><span>so far <b data-k="cum">0</b></span></div></div>
+      <div class="net">${[0, 1, 2].map(c => `<div class="comm"><span class="cl">Community ${c}${c === S.config.network.harm_cluster_community && S.config.network.harm_concentration > 0.5 && S.config.network.harm_cluster_size ? " · cluster" : ""}</span><div class="dots">${
+        S.agents.filter(a => a.community === c).map(a => `<button type="button" class="dot${a.cluster ? " cluster" : ""}" data-ag="${a.id}" aria-label="Agent ${a.id}" title="Agent ${a.id}"></button>`).join("")}</div></div>`).join("")}</div>
+      <div><div class="small muted" data-k="feedhead"></div><ul class="feed" data-k="feed"></ul></div>
+    </div>`).join("");
+  document.querySelectorAll(".dot").forEach(d => d.addEventListener("click", () => { selAgent = +d.dataset.ag; renderRound(); }));
+}
+
+function feedHTML(pol, round, ag) {
+  const R = S.replay[pol], items = (R.feeds[round] || {})[ag];
+  if (!items) return null;
+  const slotName = { i: "in-network", r: "recommended", e: "exploration" };
+  return items.map((it, k) => {
+    const p = R.posts[it[0]] || { label: "benign", text: "" };
+    const lab = p.control ? `<span class="lab control">Control</span>` : `<span class="lab ${p.label}">${p.label === "harmful" ? "Antisemitic" : p.label}</span>`;
+    const key = p.key && p.key !== "organic" ? `<b>${esc(p.key)}</b> · ` : "";
+    return `<li tabindex="0" class="${p.label === "harmful" ? "harm" : ""}" data-pid="${it[0]}" data-pol="${pol}"><span class="pos">${k + 1}</span>
+      <span class="txt">${lab}${key}${esc(p.text)}</span>
+      <span class="meta"><span>${slotName[it[1]] || it[1]}</span><span>score ${fmt(it[2], 2)} = pop ${fmt(it[3], 0)} + social ${fmt(it[4], 1)} + recency ${fmt(it[5], 2)}</span></span></li>`;
+  }).join("");
+}
+
+function renderRound() {
+  for (const pol of [A, B]) {
+    const panel = document.querySelector(`.panel[data-pol="${pol}"]`);
+    const f = S.replay[pol].feeds[t] || {}, ex = exposedAt(pol, t), ch = churnedBy(pol, t);
+    panel.querySelectorAll(".dot").forEach(d => {
+      const ag = +d.dataset.ag;
+      d.classList.toggle("active", ag in f);
+      d.classList.toggle("exposed", ex.has(ag));
+      d.classList.toggle("churned", ch.has(ag));
+      d.classList.toggle("sel", ag === selAgent);
+    });
+    panel.querySelector('[data-k="now"]').textContent = [...Object.values(f)].reduce((n, items) => n + items.filter(it => (S.replay[pol].posts[it[0]] || {}).label === "harmful").length, 0);
+    panel.querySelector('[data-k="cum"]').textContent = cumHarm(pol, t);
+    const a = S.agents[selAgent];
+    const role = a.cluster ? "cluster member" : a.counter ? "counter-speaker" : "ordinary user";
+    panel.querySelector('[data-k="feedhead"]').textContent = `Feed of agent ${selAgent} (community ${a.community}, ${role}) at round ${t}`;
+    const html = feedHTML(pol, t, selAgent);
+    const ul = panel.querySelector('[data-k="feed"]');
+    ul.innerHTML = html ?? `<li class="empty" style="cursor:default">Agent ${selAgent} did not open the app this round${ch.has(selAgent) ? " (has left the platform)" : ""}.</li>`;
+    ul.querySelectorAll("li[data-pid]").forEach(li => {
+      const go = () => { inspect.run = $("run-select").value = li.dataset.pol; inspect.pid = +li.dataset.pid; fillPostSelect(); renderInspector(); $("p-text").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" }); };
+      li.addEventListener("click", go);
+      li.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+    });
+  }
+  $("round-label").textContent = `Round ${t}${t >= 5 ? "" : " · pre-event"}`;
+  renderCharts(); renderInspector(true);
+}
+
+function setRound(r) { t = r; $("round").value = r; renderRound(); }
+function togglePlay() { timer ? stop() : play(); }
+function play() {
+  if (t >= S.config.rounds - 1) setRound(0);
+  $("play").textContent = "Pause";
+  timer = setInterval(() => { if (t >= S.config.rounds - 1) { stop(); return; } setRound(t + 1); }, matchMedia("(prefers-reduced-motion: reduce)").matches ? 1400 : 800);
+}
+function stop() { if (timer) clearInterval(timer); timer = null; $("play").textContent = "Play replay"; }
+
+/* ---------- charts ---------- */
+function lineChart(host, cfg) {
+  const W = 360, H = cfg.h || 190, L = 40, R = 46, T = 12, Bm = 26;
+  const n = cfg.a.mean.length, x0 = cfg.x0 || 0, nowI = cfg.now != null ? cfg.now : t;
+  const maxY = Math.max(1, ...cfg.a.max, ...cfg.b.max, ...(cfg.extra || []));
+  const nice = niceMax(maxY), x = i => L + (W - L - R) * i / Math.max(1, n - 1), y = v => T + (H - T - Bm) * (1 - v / nice);
+  const ticks = [0, nice / 2, nice];
+  const band = s => s.max.map((v, i) => `${x(i)},${y(v)}`).join(" ") + " " + s.min.map((v, i) => `${x(i)},${y(v)}`).reverse().join(" ");
+  const line = s => s.mean.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
+  const ev = cfg.event != null ? `<line class="ev" x1="${x(cfg.event)}" x2="${x(cfg.event)}" y1="${T}" y2="${H - Bm}"/><text class="ax" x="${x(cfg.event) + 3}" y="${T + 9}">event</text>` : "";
+  const endA = y(cfg.a.mean[n - 1]), endB = y(cfg.b.mean[n - 1]);
+  let la = endA, lb = endB; if (Math.abs(la - lb) < 12) { if (la < lb) { la -= 6; lb += 6; } else { la += 6; lb -= 6; } }
+  host.innerHTML = `<h3>${cfg.title}</h3><span class="small muted">${cfg.sub}</span>
+  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(cfg.title)}">
+    ${ticks.map(v => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L - 6}" y="${y(v) + 3}" text-anchor="end">${fmt(v)}</text>`).join("")}
+    <line class="base" x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}"/>
+    ${(x0 ? [...new Set([0, Math.floor((n - 1) / 2), n - 1])] : [0, 5, 10, 15, n - 1].filter(i => i < n)).map(i => `<text class="ax" x="${x(i)}" y="${H - 8}" text-anchor="middle">${i + x0}</text>`).join("")}
+    ${ev}
+    <polygon points="${band(cfg.a)}" fill="var(--a)" opacity=".14"/><polygon points="${band(cfg.b)}" fill="var(--b)" opacity=".14"/>
+    <path d="${line(cfg.a)}" fill="none" stroke="var(--a)" stroke-width="2"/><path d="${line(cfg.b)}" fill="none" stroke="var(--b)" stroke-width="2"/>
+    ${nowI >= 0 && nowI < n ? `<line class="now" x1="${x(nowI)}" x2="${x(nowI)}" y1="${T}" y2="${H - Bm}"/>` : ""}
+    <circle cx="${x(n - 1)}" cy="${endA}" r="3.5" fill="var(--a)" stroke="var(--surface)" stroke-width="2"/><circle cx="${x(n - 1)}" cy="${endB}" r="3.5" fill="var(--b)" stroke="var(--surface)" stroke-width="2"/>
+    <text class="endlab" x="${x(n - 1) + 7}" y="${la + 4}">A ${fmt(cfg.a.mean[n - 1])}</text><text class="endlab" x="${x(n - 1) + 7}" y="${lb + 4}">B ${fmt(cfg.b.mean[n - 1])}</text>
+    <rect x="${L}" y="${T}" width="${W - L - R}" height="${H - T - Bm}" fill="transparent" data-hit="1"/>
+  </svg><div class="tip" hidden></div>`;
+  const svg = host.querySelector("svg"), tip = host.querySelector(".tip"), hit = svg.querySelector("[data-hit]");
+  const move = e => {
+    const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+    const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+    const i = Math.max(0, Math.min(n - 1, Math.round((p.x - L) / (W - L - R) * Math.max(1, n - 1))));
+    const box = svg.getBoundingClientRect(), hb = host.getBoundingClientRect();
+    tip.hidden = false;
+    tip.style.left = (box.left - hb.left + x(i) / W * box.width) + "px";
+    tip.style.top = (box.top - hb.top + y(Math.max(cfg.a.mean[i], cfg.b.mean[i])) / H * box.height) + "px";
+    tip.innerHTML = `Round ${i + x0} · A ${fmt(cfg.a.mean[i], 1)} · B ${fmt(cfg.b.mean[i], 1)}`;
+  };
+  hit.addEventListener("mousemove", move); hit.addEventListener("mouseleave", () => tip.hidden = true);
+}
+function niceMax(v) { const p = Math.pow(10, Math.floor(Math.log10(v))); const m = v / p; return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p; }
+
+function renderCharts() {
+  const host = $("charts"), sa = S.series[A], sb = S.series[B];
+  const defs = [
+    ["harmful_impressions_cum", "Antisemitic exposure", "Cumulative feed slots holding an antisemitic post"],
+    ["ordinary_engagement_cum", "Ordinary engagement", "Cumulative likes, reposts, replies and new posts on non-antisemitic content"],
+    ["counterspeech_exposure_cum", "Counterspeech exposure", "Cumulative counterspeech posts shown + counterspeech replies shown"],
+  ];
+  if (!host.children.length) host.innerHTML = defs.map((d, i) => `<div class="card chart" id="ch-${i}"></div>`).join("");
+  defs.forEach((d, i) => lineChart($("ch-" + i), { title: d[1], sub: d[2], a: sa[d[0]], b: sb[d[0]], event: 5 }));
+}
+
+/* ---------- inspector ---------- */
+function findKey(pol, key) {
+  const e = Object.entries(S.replay[pol].posts).find(([, p]) => p.key === key); return e ? +e[0] : null;
+}
+function maxEndorse(pol, pid) { const sn = S.replay[pol].snapshots[pid] || []; return sn.reduce((m, s) => Math.max(m, s[2]), 0); }
+function topHarmful(pol) {
+  const P = S.replay[pol].posts; let best = null, bv = -1;
+  for (const pid of Object.keys(P)) if (P[pid].label === "harmful") { const v = maxEndorse(pol, pid); if (v > bv) { bv = v; best = +pid; } }
+  return best;
+}
+function fillPostSelect() {
+  const P = S.replay[inspect.run].posts;
+  const scen = Object.entries(P).filter(([, p]) => p.key && p.key !== "organic");
+  const org = Object.entries(P).filter(([, p]) => p.key === "organic").sort((a, b) => maxEndorse(inspect.run, b[0]) - maxEndorse(inspect.run, a[0])).slice(0, 8);
+  const opt = ([pid, p]) => `<option value="${pid}">${p.key !== "organic" ? p.key : "post " + pid} · ${p.control ? "control" : p.label} · ${esc(p.text.slice(0, 48))}</option>`;
+  $("post-select").innerHTML = `<optgroup label="Scenario posts">${scen.map(opt).join("")}</optgroup><optgroup label="Most-endorsed posts written during the run">${org.map(opt).join("")}</optgroup>`;
+  if (inspect.pid != null) $("post-select").value = inspect.pid;
+}
+function renderInspector(roundOnly) {
+  if (inspect.pid == null) { $("p-text").textContent = "No post selected."; $("p-calc").innerHTML = ""; $("p-chart").innerHTML = ""; return; }
+  if (!roundOnly) fillPostSelect();
+  const R = S.replay[inspect.run], p = R.posts[inspect.pid], sn = R.snapshots[inspect.pid] || [];
+  const cap = S.config.ranking.community_cap;
+  const lab = p.control ? `<span class="lab control">Benign control</span>` : `<span class="lab ${p.label}">${p.label === "harmful" ? "Antisemitic (placeholder)" : p.label}</span>`;
+  const author = S.agents[p.author];
+  $("p-text").innerHTML = `${lab}<b>${p.key && p.key !== "organic" ? esc(p.key) + " · " : ""}</b>${esc(p.text)} <span class="small muted">— agent ${p.author}, community ${author.community}, posted round ${p.round}. History from run ${inspect.run === A ? "A" : "B"}, seed ${S.replay_seed}.</span>`;
+  const at = sn.filter(s => s[0] <= t).pop();
+  if (!at) {
+    $("p-calc").innerHTML = `<span>Not yet eligible at round ${t}. Move the replay to round ${p.round} or later.</span>`;
+  } else {
+    const e = at[1];
+    $("p-calc").innerHTML = `<span class="muted">Round ${at[0]} · distinct endorsers by community</span>
+      <div class="row"><span>e₀ = ${e[0]} · e₁ = ${e[1]} · e₂ = ${e[2]}</span></div>
+      <div class="row"><span class="a">A: ${e[0]} + ${e[1]} + ${e[2]}</span><span class="a">= ${fmt(at[2])}</span></div>
+      <div class="row"><span class="b">B: min(${cap},${e[0]}) + min(${cap},${e[1]}) + min(${cap},${e[2]})</span><span class="b">= ${fmt(at[3])}</span></div>
+      <div class="row muted"><span>popularity removed by the cap</span><span>${fmt(at[2] - at[3])}</span></div>`;
+  }
+  const lastS = sn.length ? sn[sn.length - 1][1] : [0, 0, 0], lastTot = lastS[0] + lastS[1] + lastS[2];
+  const share = lastTot ? Math.max(...lastS) / lastTot : 0;
+  $("p-note").textContent = p.label === "harmful"
+    ? `By its last eligible round, ${Math.round(share * 100)}% of this post's ${lastTot} endorsements came from one community. That concentration is what rule B discounts.`
+    : p.control ? `This benign post is endorsed heavily inside its own community. Rule B discounts it the same way, which is the cost the benchmark has to show.`
+    : `Rule B only changes the popularity term. The other score parts stay the same.`;
+  if (!sn.length) { $("p-chart").innerHTML = ""; return; }
+  const first = sn[0][0], last = sn[sn.length - 1][0];
+  const pa = sn.map(s => s[2]), pb = sn.map(s => s[3]);
+  lineChart($("p-chart"), {
+    title: "Popularity term while the post is eligible", sub: `Same endorsement history scored by A and by B · rounds ${first}–${last}`,
+    a: { mean: pa, min: pa, max: pa }, b: { mean: pb, min: pb, max: pb }, event: null, x0: first, now: t - first, h: 170,
+  });
+}
+
+/* ---------- sensitivity, findings ---------- */
+function renderSensitivity() {
+  const rows = DATA.sensitivity || [];
+  if (!rows.length) { $("sens-note").textContent = "No sweep in this export. Run python run_benchmark.py to add one."; return; }
+  const sc = DATA.scenarios.find(s => s.key === rows[0].scenario);
+  $("sens-note").textContent = `Rule B with different caps in “${sc ? sc.title : rows[0].scenario}”, each relative to rule A over the same ${sc ? sc.config.seeds.length : ""} seeds.`;
+  $("sens").innerHTML = `<thead><tr><th>Cap</th><th>Antisemitic exposure</th><th>Ordinary engagement</th><th>Counterspeech</th></tr></thead><tbody>` +
+    rows.map(r => `<tr><td class="mono">${r.cap}${r.cap === DATA.scenarios[0].config.ranking.community_cap ? " (used above)" : ""}</td><td>${pct(r.harm_ratio)} <span class="muted small">(${pct(r.harm_ratio_min)} to ${pct(r.harm_ratio_max)})</span></td><td>${kept(r.engagement_ratio)}</td><td>${kept(r.counterspeech_ratio)}</td></tr>`).join("") +
+    `</tbody>`;
+}
+function renderFindings() {
+  const items = DATA.scenarios.map(s => {
+    const b = sum(s, B);
+    const harm = b.harm_ratio == null ? "no antisemitic content" : `antisemitic exposure ${pct(b.harm_ratio)} (seeds ${pct(b.harm_ratio_min)} to ${pct(b.harm_ratio_max)})`;
+    return `<li><b>${esc(s.title)}:</b> ${harm}, ordinary engagement ${kept(b.engagement_ratio)}, counterspeech exposure ${kept(b.counterspeech_ratio)}, control post reach ${kept(b.control_ratio)} (seeds ${kept(b.control_ratio_min)}–${kept(b.control_ratio_max)}).</li>`;
+  });
+  items.push(`<li class="muted">The cap only changes the popularity term. Exposure that travels through follows, “endorsed by people you follow” and the random exploration slot is untouched, which limits what any popularity rule can achieve here.</li>`);
+  $("findings").innerHTML = items.join("");
+}
+function copyCsv() {
+  const cols = ["scenario", "policy", "harmful_impressions", "harm_ratio", "harm_ratio_min", "harm_ratio_max", "ordinary_engagement", "engagement_ratio", "counterspeech_exposure", "counterspeech_ratio", "control_reach", "control_ratio", "harmful_reach", "churned", "verdict"];
+  const lines = [cols.join(",")];
+  DATA.scenarios.forEach(s => s.summary.forEach(r => lines.push(cols.map(c => c === "scenario" ? s.key : JSON.stringify(r[c] ?? "")).join(","))));
+  const text = lines.join("\n");
+  navigator.clipboard.writeText(text).then(() => $("copy-msg").textContent = "Copied.").catch(() => {
+    $("copy-msg").textContent = "Clipboard blocked. The CSV is in results/summary.csv.";
+  });
+}
+
+if (DATA) init(); else document.querySelector(".wrap").insertAdjacentHTML("afterbegin", "<p class='empty'>No benchmark data embedded. Run python build_replay.py.</p>");
+</script>

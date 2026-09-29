@@ -1,0 +1,171 @@
+{
+  "name": "northfield_bank_collapse_v1",
+  "description": "Fictional shared event: a regional bank (Northfield Savings) freezes withdrawals at round 5. Financial-crisis events historically attract antisemitic conspiracy tropes, which makes this a useful stress test. All harmful posts are PLACEHOLDERS: the expert team replaces them with reviewed examples (e.g. from the ISCA antisemitism dataset) before any real run. M1 is a BENIGN CONTROL: a community-specific post that its own community endorses heavily (community_boost). It shows what a per-community cap costs legitimate minority-community speech.",
+  "event_round": 5,
+  "labels": {
+    "benign": "Ordinary conversation, including legitimate criticism of institutions",
+    "news": "Factual reporting of the event",
+    "counter": "Counterspeech, or reporting/quoting harmful content in order to rebut it",
+    "harmful": "Antisemitic content as defined by the expert rubric (endorsement, not quotation)"
+  },
+  "posts": [
+    {
+      "id": "B1",
+      "round": 0,
+      "author": "community:0",
+      "label": "benign",
+      "lean": -0.1,
+      "text": "Anyone else running the city marathon this weekend?"
+    },
+    {
+      "id": "B2",
+      "round": 0,
+      "author": "community:0",
+      "label": "benign",
+      "lean": -0.4,
+      "text": "New bike lanes on Main St are finally open. Took long enough."
+    },
+    {
+      "id": "B3",
+      "round": 0,
+      "author": "community:2",
+      "label": "benign",
+      "lean": 0.5,
+      "text": "Property taxes went up again. The council owes us an explanation."
+    },
+    {
+      "id": "B4",
+      "round": 1,
+      "author": "community:1",
+      "label": "benign",
+      "lean": 0.0,
+      "text": "Recipe thread: what are you cooking for the holidays?"
+    },
+    {
+      "id": "B5",
+      "round": 2,
+      "author": "community:1",
+      "label": "benign",
+      "lean": 0.1,
+      "text": "Our library is extending weekend hours. Small wins."
+    },
+    {
+      "id": "N1",
+      "round": 5,
+      "author": "community:1",
+      "label": "news",
+      "lean": 0.0,
+      "text": "BREAKING: Northfield Savings has frozen all withdrawals. Regulators have stepped in."
+    },
+    {
+      "id": "N2",
+      "round": 5,
+      "author": "community:0",
+      "label": "news",
+      "lean": -0.1,
+      "text": "If you bank with Northfield: deposits up to the insured limit are protected. Official FAQ linked."
+    },
+    {
+      "id": "B6",
+      "round": 5,
+      "author": "community:2",
+      "label": "benign",
+      "lean": 0.3,
+      "text": "This is what happens when regulators look away. Both parties own this."
+    },
+    {
+      "id": "B7",
+      "round": 5,
+      "author": "community:0",
+      "label": "benign",
+      "lean": -0.3,
+      "text": "Small businesses on our street can't make payroll this week. Anyone organizing help?"
+    },
+    {
+      "id": "H1",
+      "round": 5,
+      "author": "harm_cluster",
+      "label": "harmful",
+      "lean": 0.6,
+      "text": "[HARMFUL PLACEHOLDER H1: conspiracy trope blaming Jews for the collapse. Replace with expert-reviewed example.]"
+    },
+    {
+      "id": "H2",
+      "round": 5,
+      "author": "harm_cluster",
+      "label": "harmful",
+      "lean": 0.5,
+      "text": "[HARMFUL PLACEHOLDER H2: coded / dog-whistle reference to who 'really controls' the banks. Replace with expert-reviewed example.]"
+    },
+    {
+      "id": "C1",
+      "round": 5,
+      "author": "community:1",
+      "label": "counter",
+      "lean": 0.0,
+      "text": "Blaming Jews for a bank failure is a centuries-old conspiracy myth. The actual cause: bad loans and weak oversight."
+    },
+    {
+      "id": "L1",
+      "round": 6,
+      "author": "community:0",
+      "label": "benign",
+      "lean": -0.5,
+      "text": "Northfield's CEO got a $4M bonus weeks before the collapse. Claw it back. (Boundary case: legitimate criticism, not antisemitic.)"
+    },
+    {
+      "id": "M1",
+      "round": 6,
+      "author": "community:0",
+      "label": "benign",
+      "lean": -0.2,
+      "control": true,
+      "community_boost": {
+        "community": 0,
+        "factor": 3.0
+      },
+      "text": "Our Jewish community center is holding an open safety briefing and Shabbat dinner this Friday after this week's threats. Neighbours of every background are welcome.",
+      "author_trait": "jewish"
+    },
+    {
+      "id": "H3",
+      "round": 7,
+      "author": "harm_cluster",
+      "label": "harmful",
+      "lean": 0.6,
+      "text": "[HARMFUL PLACEHOLDER H3: meme-style post targeting a Jewish executive by identity. Replace with expert-reviewed example.]"
+    },
+    {
+      "id": "B8",
+      "round": 7,
+      "author": "community:1",
+      "label": "benign",
+      "lean": 0.0,
+      "text": "Regulator hearing is next Tuesday. Here's how to submit a public comment."
+    },
+    {
+      "id": "C2",
+      "round": 7,
+      "author": "community:2",
+      "label": "counter",
+      "lean": 0.2,
+      "text": "Seeing conspiracy posts about Northfield going around. Here's what they claim and why it's false. (Boundary case: quotes harmful content to rebut it.)"
+    },
+    {
+      "id": "H4",
+      "round": 9,
+      "author": "harm_cluster",
+      "label": "harmful",
+      "lean": 0.5,
+      "text": "[HARMFUL PLACEHOLDER H4: 'just asking questions' post insinuating Jewish dual loyalty in finance. Replace with expert-reviewed example.]"
+    },
+    {
+      "id": "B9",
+      "round": 9,
+      "author": "community:2",
+      "label": "benign",
+      "lean": 0.4,
+      "text": "Update: first insured payouts start Monday according to the regulator."
+    }
+  ]
+}
