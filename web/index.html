@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TikkunTech Ranking Lab</title>
+<style>
+:root {
+  color-scheme: light;
+  --surface-0: #f4f3f0; --surface-1: #fcfcfb; --surface-2: #efeee9; --border: #dddbd3;
+  --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #7a7873;
+  --accent: #2a78d6; --line: #3b3a37; --band: #d8d6ce;
+  --lab-ordinary: #2a78d6; --lab-antisemitic: #eb6834; --lab-counter: #1baf7a; --lab-ambiguous: #9a9893;
+  --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+  --stripe: rgba(0,0,0,.35);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface-0: #121211; --surface-1: #1a1a19; --surface-2: #242422; --border: #383835;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+    --accent: #3987e5; --line: #e4e3dc; --band: #3d3d39;
+    --lab-ordinary: #3987e5; --lab-antisemitic: #d95926; --lab-counter: #199e70; --lab-ambiguous: #8a8984;
+    --stripe: rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-0: #121211; --surface-1: #1a1a19; --surface-2: #242422; --border: #383835;
+  --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+  --accent: #3987e5; --line: #e4e3dc; --band: #3d3d39;
+  --lab-ordinary: #3987e5; --lab-antisemitic: #d95926; --lab-counter: #199e70; --lab-ambiguous: #8a8984;
+  --stripe: rgba(0,0,0,.45);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--surface-0); color: var(--text-primary);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 1240px; margin: 0 auto; padding: 20px 16px 64px; }
+h1 { font-size: 1.6rem; margin: 0 0 4px; letter-spacing: -.01em; }
+h2 { font-size: 1.15rem; margin: 0 0 4px; }
+h3 { font-size: .95rem; margin: 0 0 8px; }
+p { margin: 0 0 8px; }
+.lede { color: var(--text-secondary); max-width: 780px; }
+.muted { color: var(--text-muted); font-size: .85rem; }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 16px; }
+.section-head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+.badge { border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; font-size: .78rem; color: var(--text-secondary); background: var(--surface-1); }
+.badge.status-exploratory { border-color: var(--serious); color: var(--text-primary); }
+.badge.status-pre-registered { border-color: var(--good); color: var(--text-primary); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; background: var(--surface-2); padding: 3px; border-radius: 8px; }
+.tabs button { border: 0; background: transparent; color: var(--text-secondary); padding: 6px 12px; border-radius: 6px; cursor: pointer; font: inherit; font-size: .88rem; }
+.tabs button[aria-selected="true"] { background: var(--surface-1); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+button.btn, select, input, textarea { font: inherit; font-size: .9rem; color: var(--text-primary); background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; }
+button.btn { cursor: pointer; }
+button.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.btn:disabled { opacity: .5; cursor: not-allowed; }
+label.field { display: flex; flex-direction: column; gap: 3px; font-size: .8rem; color: var(--text-secondary); }
+.banner { border-left: 4px solid var(--serious); background: var(--surface-2); padding: 10px 12px; border-radius: 6px; margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.banner.prereg { border-left-color: var(--good); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.tile { background: var(--surface-2); border-radius: 8px; padding: 12px; }
+.tile .k { font-size: .8rem; color: var(--text-secondary); }
+.tile .v { font-size: 1.7rem; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.tile .d { font-size: .8rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.findings { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 4px; }
+.findings li { display: flex; gap: 8px; align-items: baseline; font-size: .9rem; }
+.icon { display: inline-flex; width: 18px; height: 18px; border-radius: 50%; align-items: center; justify-content: center; font-size: .72rem; font-weight: 700; flex: none; color: #fff; }
+.icon.good { background: var(--good); } .icon.neutral { background: var(--text-muted); }
+.icon.serious { background: var(--serious); color: #1a1a19; } .icon.critical { background: var(--critical); }
+.verdict { font-weight: 600; margin-top: 10px; }
+.panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 820px) { .panels { grid-template-columns: 1fr; } }
+.panel { border: 1px solid var(--border); border-radius: 8px; padding: 12px; min-width: 0; }
+.panel h3 { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.panel h3 small { font-weight: 400; color: var(--text-muted); }
+.community { display: grid; grid-template-columns: 56px 1fr; align-items: center; gap: 6px; margin: 4px 0; }
+.community .name { font-size: .75rem; color: var(--text-secondary); }
+.agents { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 3px; }
+.agent { border: 1px solid transparent; border-radius: 4px; padding: 2px; background: var(--surface-2); cursor: pointer; display: grid; grid-template-rows: repeat(3, 7px); gap: 2px; min-width: 0; }
+.agent:hover, .agent:focus-visible { border-color: var(--text-secondary); outline: none; }
+.agent.selected { border-color: var(--text-primary); box-shadow: 0 0 0 1px var(--text-primary); }
+.cell { border-radius: 2px; position: relative; }
+.cell.ordinary, .sw.ordinary { background: var(--lab-ordinary); }
+.cell.counterspeech, .sw.counterspeech { background: var(--lab-counter); }
+.cell.antisemitic, .sw.antisemitic { background: var(--lab-antisemitic) repeating-linear-gradient(45deg, var(--stripe) 0 1.5px, transparent 1.5px 4px); background-blend-mode: normal; }
+.cell.ambiguous, .sw.ambiguous { background: transparent; border: 1px dashed var(--lab-ambiguous); }
+.cell.empty { background: transparent; }
+.cell.acted::after { content: ""; position: absolute; right: 1px; top: 50%; width: 5px; height: 5px; margin-top: -2.5px; border-radius: 50%; background: var(--surface-1); box-shadow: 0 0 0 1px var(--text-primary); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .8rem; color: var(--text-secondary); align-items: center; }
+.legend .sw { display: inline-block; width: 14px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 4px; }
+.legend .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--surface-1); box-shadow: 0 0 0 1px var(--text-primary); margin-right: 4px; }
+.stack { display: flex; height: 14px; gap: 2px; margin: 10px 0 4px; }
+.stack > span { border-radius: 2px; min-width: 0; }
+.stack-legend { font-size: .78rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.replay-controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-bottom: 12px; }
+.replay-controls input[type=range] { width: 200px; padding: 0; }
+.feedlist { margin: 10px 0 0; padding: 0; list-style: none; font-size: .82rem; }
+.feedlist li { display: grid; grid-template-columns: 22px 38px 1fr auto; gap: 6px; padding: 4px 0; border-top: 1px solid var(--border); align-items: center; }
+.feedlist .sw { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }
+.feedlist button { all: unset; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+.inspector-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 820px) { .inspector-grid { grid-template-columns: 1fr; } }
+.post-text { background: var(--surface-2); border-radius: 6px; padding: 10px 12px; margin: 8px 0; }
+.bars { display: grid; gap: 4px; margin-top: 6px; }
+.bar-row { display: grid; grid-template-columns: 56px 1fr 26px; gap: 6px; align-items: center; font-size: .78rem; color: var(--text-secondary); }
+.bar-track { position: relative; height: 12px; background: var(--surface-2); border-radius: 3px; }
+.bar-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: 0 4px 4px 0; }
+.bar-fill.clipped { background: var(--text-muted); }
+.cap-line { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--text-primary); }
+.formula { font-family: ui-monospace, Consolas, monospace; font-size: .8rem; background: var(--surface-2); padding: 6px 8px; border-radius: 6px; margin-top: 8px; overflow-x: auto; white-space: nowrap; }
+.lab-form { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; }
+.table-wrap { overflow-x: auto; margin-top: 12px; }
+table { border-collapse: collapse; width: 100%; font-size: .84rem; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-weight: 600; color: var(--text-secondary); font-size: .78rem; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr.current td { background: var(--surface-2); }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.chart { position: relative; }
+.chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart text { fill: var(--text-muted); font-size: 10px; }
+.tooltip { position: absolute; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-size: .78rem; box-shadow: 0 4px 12px rgba(0,0,0,.15); white-space: nowrap; z-index: 5; }
+.feedback-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; }
+@media (max-width: 820px) { .feedback-grid { grid-template-columns: 1fr; } }
+.feedback-form { display: grid; gap: 8px; }
+.feedback-form .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+@media (max-width: 520px) { .feedback-form .row { grid-template-columns: 1fr; } }
+textarea { min-height: 90px; resize: vertical; }
+.log { max-height: 340px; overflow-y: auto; display: grid; gap: 8px; }
+.log-entry { background: var(--surface-2); border-radius: 6px; padding: 8px 10px; font-size: .84rem; }
+.log-entry .meta { font-size: .75rem; color: var(--text-muted); }
+details summary { cursor: pointer; color: var(--text-secondary); font-size: .85rem; margin-top: 8px; }
+ul.limits { margin: 6px 0 0; padding-left: 18px; color: var(--text-secondary); font-size: .88rem; }
+a { color: var(--accent); }
+.error { color: var(--critical); font-size: .85rem; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>TikkunTech Ranking Lab</h1>
+    <p class="lede">Compare feed-ranking rules in the same synthetic social network. We measure antisemitic exposure and what each rule costs ordinary participation, counterspeech and Jewish community-life posts.</p>
+    <div class="badges" id="badges"></div>
+    <div id="status-banner"></div>
+  </header>
+
+  <section class="card">
+    <div class="section-head">
+      <div class="toolbar">
+        <div class="tabs" role="tablist" id="fixture-tabs" aria-label="Fixture"></div>
+        <label class="field">Seed (replay)<select id="seed-select"></select></label>
+      </div>
+      <span class="muted" id="fixture-desc"></span>
+    </div>
+    <div class="tiles" id="tiles"></div>
+    <ul class="findings" id="findings"></ul>
+  </section>
+
+  <section class="card">
+    <div class="section-head">
+      <div>
+        <h2>Replay: the same 50 agents, two ranking rules</h2>
+        <p class="muted">Saved traces from the simulator. Each tile is one agent; its three bars are the three posts in that agent's feed this round. Click an agent to see their feed and scores.</p>
+      </div>
+    </div>
+    <div class="replay-controls">
+      <button class="btn primary" id="play">&#9654; Replay</button>
+      <label class="field">Round <input type="range" id="round" min="1" max="6" value="1"></label>
+      <span class="num" id="round-label"></span>
+      <div class="legend" id="label-legend"></div>
+    </div>
+    <div class="panels" id="panels"></div>
+  </section>
+
+  <section class="card">
+    <div class="section-head">
+      <div>
+        <h2>Inspect a post: how endorsements become a score</h2>
+        <p class="muted">Ranking sees only how many distinct agents in each community endorsed the post. It never reads the text or the label.</p>
+      </div>
+      <div class="toolbar">
+        <div id="quick-posts" class="toolbar"></div>
+        <label class="field">Post<select id="post-select"></select></label>
+      </div>
+    </div>
+    <div id="inspector"></div>
+  </section>
+
+  <section class="card">
+    <div class="section-head">
+      <div>
+        <h2>Algorithm lab: test a ranking change</h2>
+        <p class="muted">Run any rule against the baseline on all three fixtures and five seeds. The feedback below updates automatically. Runs here are <strong>exploratory</strong>; only the pre-registered cap of 2 is the headline test.</p>
+      </div>
+    </div>
+    <div class="lab-form">
+      <label class="field">Candidate rule<select id="rule-select"></select></label>
+      <label class="field">Cap per community<input type="number" id="cap-input" min="1" max="10" value="2" style="width:90px"></label>
+      <button class="btn primary" id="run-lab">Run experiment</button>
+      <button class="btn" id="reset-lab">Back to pre-registered</button>
+      <span class="muted" id="lab-state"></span>
+    </div>
+    <div class="formula" id="rule-formula"></div>
+    <p class="error" id="lab-error"></p>
+    <h3 style="margin-top:14px">Rule comparison (mean across 5 seeds, relative to baseline)</h3>
+    <div class="table-wrap"><table id="compare-table"></table></div>
+    <p class="muted">Feedback thresholds are for display only: &plusmn;1 pp for exposure, below 90% or above 110% for retention. The experts should agree acceptance thresholds before the final run.</p>
+  </section>
+
+  <section class="card">
+    <div class="section-head">
+      <div>
+        <h2>Sensitivity to the cap size</h2>
+        <p class="muted" id="sweep-desc"></p>
+      </div>
+    </div>
+    <div class="charts" id="charts"></div>
+    <details><summary>Show as table</summary><div class="table-wrap"><table id="sweep-table"></table></div></details>
+  </section>
+
+  <section class="card">
+    <div class="section-head">
+      <div>
+        <h2>Reviewer feedback</h2>
+        <p class="muted">Mentors, experts and analysts can leave notes on the result on screen. Each note records the rule, cap, fixture and configuration hash.</p>
+      </div>
+      <button class="btn" id="download-log">Download log (JSON)</button>
+    </div>
+    <div class="feedback-grid">
+      <form class="feedback-form" id="feedback-form">
+        <div class="row">
+          <label class="field">Name<input name="reviewer" maxlength="80" placeholder="optional"></label>
+          <label class="field">Role<select name="role">
+            <option>Mentor</option><option>Domain expert</option><option>Policy analyst</option>
+            <option>Community representative</option><option>Developer</option><option>Other</option></select></label>
+          <label class="field">Assessment<select name="rating">
+            <option value="useful">Useful as shown</option><option value="needs-changes">Needs changes</option>
+            <option value="misleading">Risk of misleading</option></select></label>
+        </div>
+        <label class="field">Note<textarea name="note" maxlength="2000" required placeholder="What is convincing, what is missing, which safeguard or scenario should we add?"></textarea></label>
+        <div class="toolbar"><button class="btn primary" type="submit">Save feedback</button><span class="muted" id="feedback-context"></span></div>
+        <p class="error" id="feedback-error"></p>
+      </form>
+      <div>
+        <h3>Recent notes</h3>
+        <div class="log" id="feedback-log"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Method and limitations</h2>
+    <p class="muted" id="method"></p>
+    <ul class="limits" id="limits"></ul>
+    <p class="muted" style="margin-top:10px">Downloads (pre-registered run): <a href="data/results.json" download>results.json</a> &middot; <a href="data/events.csv" download>events.csv</a> &middot; <a href="data/config.json" download>config.json</a> &middot; <a href="data/posts.json" download>posts.json</a> &middot; <a href="data/agents.json" download>agents.json</a></p>
+  </section>
+</main>
+<div class="tooltip hidden" id="tooltip"></div>
+
+<script>
+"use strict";
+const LABELS = ["antisemitic", "ordinary", "counterspeech", "ambiguous"];
+const LABEL_NAMES = { antisemitic: "Antisemitic", ordinary: "Ordinary", counterspeech: "Counterspeech", ambiguous: "Ambiguous" };
+const ICONS = { good: "✓", neutral: "–", serious: "!", critical: "✕" };
+const S = { prereg: null, bundle: null, fixture: 0, seedIdx: 0, round: 1, agent: null, post: null,
+            timer: null, server: false, labRuns: [], feedback: [], experiments: [] };
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pct = (x, d = 0) => x == null ? "N/A" : (100 * x).toFixed(d) + "%";
+const pp = (x) => x == null ? "N/A" : (x > 0 ? "+" : "") + x.toFixed(1) + " pp";
+const store = {
+  get(key, fallback) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; } },
+  set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* storage unavailable */ } },
+};
+
+const scenario = () => S.bundle.scenarios[S.fixture];
+const run = () => scenario().runs[S.seedIdx];
+const postsById = () => Object.fromEntries(S.bundle.posts.map((p) => [p.id, p]));
+const candidateName = () => {
+  const c = S.bundle.meta.candidate;
+  return c.name + (c.uses_cap ? " (cap " + c.cap + ")" : "");
+};
+
+async function init() {
+  const response = await fetch("data/results.json", { cache: "no-store" });
+  S.prereg = await response.json();
+  S.bundle = S.prereg;
+  try { S.server = (await fetch("api/rules", { cache: "no-store" })).ok; } catch (e) { S.server = false; }
+  S.labRuns = store.get("tt-lab-runs", []).filter((r) => r.config_hash);
+  addLabRun(S.prereg);
+  S.post = scenario().focus_post_ids[0];
+  setupStatic();
+  await loadFeedback();
+  renderAll();
+}
+
+function setupStatic() {
+  $("label-legend").innerHTML = LABELS.map((l) => `<span><span class="sw ${l}"></span>${LABEL_NAMES[l]}</span>`).join("")
+    + `<span><span class="dot"></span>liked or reshared</span>`;
+  const rules = S.prereg.rules;
+  $("rule-select").innerHTML = Object.entries(rules).filter(([k]) => k !== "baseline")
+    .map(([k, r]) => `<option value="${k}">${esc(r.name)}</option>`).join("");
+  $("rule-select").onchange = updateRuleForm;
+  $("run-lab").onclick = runLab;
+  $("reset-lab").onclick = () => { S.bundle = S.prereg; clampState(); renderAll(); };
+  $("round").oninput = (e) => { stop(); S.round = +e.target.value; renderReplay(); renderInspector(); };
+  $("play").onclick = () => S.timer ? stop() : play();
+  $("seed-select").onchange = (e) => { S.seedIdx = +e.target.value; renderAll(); };
+  $("post-select").onchange = (e) => { S.post = e.target.value; renderInspector(); };
+  $("feedback-form").onsubmit = saveFeedback;
+  $("download-log").onclick = downloadLog;
+  updateRuleForm();
+  if (!S.server) {
+    $("run-lab").disabled = true;
+    $("lab-state").textContent = "Start the server with python app.py to run new experiments.";
+  }
+}
+
+function updateRuleForm() {
+  const rule = S.prereg.rules[$("rule-select").value];
+  $("cap-input").disabled = !rule.uses_cap;
+  $("rule-formula").textContent = "score(p) = " + rule.formula + "    vs. baseline: " + S.prereg.rules.baseline.formula;
+}
+
+function clampState() {
+  S.fixture = Math.min(S.fixture, S.bundle.scenarios.length - 1);
+  S.seedIdx = Math.min(S.seedIdx, scenario().runs.length - 1);
+}
+
+function renderAll() {
+  renderHeader(); renderTiles(); renderReplay(); renderInspector(); renderCompare(); renderSweep(); renderFeedbackLog(); renderMethod();
+}
+
+function renderHeader() {
+  const m = S.bundle.meta;
+  $("badges").innerHTML = [
+    `<span class="badge status-${m.status}">${m.status === "pre-registered" ? "Pre-registered test" : "Exploratory run"}</span>`,
+    `<span class="badge">Replay of computed traces</span>`, `<span class="badge">Synthetic network, 50 agents</span>`,
+    `<span class="badge">Labels: draft, awaiting expert review</span>`,
+    `<span class="badge" title="${esc(m.config_hash)}">config ${esc(m.config_hash.slice(0, 10))}</span>`,
+    `<span class="badge">engine ${esc(m.engine)} v${esc(m.version)}</span>`,
+  ].join("");
+  $("status-banner").innerHTML = m.status === "pre-registered"
+    ? `<div class="banner prereg"><span><strong>Pre-registered comparison:</strong> ${esc(S.bundle.meta.baseline.name)} vs ${esc(candidateName())}. The cap, seeds and fixtures were fixed before we looked at results.</span></div>`
+    : `<div class="banner"><span><strong>Exploratory:</strong> ${esc(candidateName())} vs baseline. This rule was chosen after seeing results, so treat it as a hypothesis to pre-register, not a finding.</span><button class="btn" onclick="S.bundle=S.prereg;clampState();renderAll()">Back to pre-registered</button></div>`;
+  $("fixture-tabs").innerHTML = S.bundle.scenarios.map((s, i) =>
+    `<button role="tab" aria-selected="${i === S.fixture}" data-i="${i}">${esc(s.name)}</button>`).join("");
+  $("fixture-tabs").querySelectorAll("button").forEach((b) => b.onclick = () => {
+    S.fixture = +b.dataset.i; S.post = scenario().focus_post_ids[0]; S.agent = null; renderAll();
+  });
+  $("seed-select").innerHTML = scenario().runs.map((r, i) =>
+    `<option value="${i}" ${i === S.seedIdx ? "selected" : ""}>${r.seed}${i === 0 ? " (declared replay seed)" : ""}</option>`).join("");
+  $("fixture-desc").textContent = scenario().description;
+}
+
+function range(summary, fmt) {
+  if (summary.min == null) return "N/A";
+  return summary.min === summary.max ? "same in all " + summary.values.length + " seeds" : "seed range " + fmt(summary.min) + " to " + fmt(summary.max);
+}
+
+function renderTiles() {
+  const r = run(), b = r.metrics.baseline, c = r.metrics.candidate, cmp = scenario().summary.comparisons;
+  const tiles = [
+    { k: "Antisemitic exposure", v: pp(r.comparison.harmful_exposure_delta_pp),
+      d: `${pct(b.harmful_exposure_rate, 1)} → ${pct(c.harmful_exposure_rate, 1)} of feed impressions<br>${b.harmful_impressions} → ${c.harmful_impressions} of ${c.total_impressions} impressions · ${range(cmp.harmful_exposure_delta_pp, pp)}<br>Reach: ${b.harmful_reach_count} → ${c.harmful_reach_count} of 50 agents` },
+    { k: "Ordinary engagement retention", v: pct(r.comparison.ordinary_engagement_retention),
+      d: `${b.ordinary_actions} → ${c.ordinary_actions} likes and reshares<br>${range(cmp.ordinary_engagement_retention, pct)}` },
+    { k: "Counterspeech exposure retention", v: pct(r.comparison.counterspeech_exposure_retention),
+      d: `${b.counterspeech_impressions} → ${c.counterspeech_impressions} impressions<br>${range(cmp.counterspeech_exposure_retention, pct)}` },
+    { k: "Jewish community-life reach", v: pct(r.comparison.jewish_life_reach_retention),
+      d: `${b.jewish_life_impressions} → ${c.jewish_life_impressions} impressions of ordinary posts about Jewish life<br>${range(cmp.jewish_life_reach_retention, pct)}` },
+  ];
+  $("tiles").innerHTML = tiles.map((t) => `<div class="tile"><div class="k">${t.k}</div><div class="v">${t.v}</div><div class="d">${t.d}</div></div>`).join("");
+  $("findings").innerHTML = scenario().feedback.map((f) =>
+    `<li><span class="icon ${f.level}" aria-label="${f.level}">${ICONS[f.level]}</span><span>${esc(f.text)}</span></li>`).join("")
+    + `<li class="verdict"><span>Across all fixtures: ${esc(S.bundle.meta.verdict)}</span></li>`;
+}
+
+function agentsByCommunity() {
+  const groups = S.bundle.config.communities.map((name) => ({ name, agents: [] }));
+  S.bundle.agents.forEach((a) => groups[a.community].agents.push(a));
+  return groups;
+}
+
+function renderReplay() {
+  const posts = postsById(), r = run();
+  $("round").value = S.round;
+  $("round-label").textContent = "Round " + S.round + " of " + S.bundle.config.rounds;
+  const panels = [["baseline", S.bundle.meta.baseline.name], ["candidate", candidateName()]];
+  $("panels").innerHTML = panels.map(([key, title]) => {
+    const snap = r.policies[key].rounds[S.round - 1];
+    const grid = agentsByCommunity().map((g) => `<div class="community"><span class="name">${esc(g.name)}</span><div class="agents">${
+      g.agents.map((a) => {
+        const feed = snap.feeds[a.id] || [];
+        const cells = [0, 1, 2].map((i) => {
+          const item = feed[i];
+          if (!item) return `<span class="cell empty"></span>`;
+          return `<span class="cell ${posts[item.post_id].label}${item.action !== "none" ? " acted" : ""}"></span>`;
+        }).join("");
+        const tip = a.name + ": " + feed.map((i) => i.post_id + " " + posts[i.post_id].label).join(", ");
+        return `<button class="agent${S.agent === a.id ? " selected" : ""}" data-agent="${a.id}" title="${esc(tip)}" aria-label="${esc(tip)}">${cells}</button>`;
+      }).join("")}</div></div>`).join("");
+    const m = snap.metrics, total = m.total_impressions;
+    const parts = [["antisemitic", m.harmful_impressions], ["ordinary", m.ordinary_impressions],
+                   ["counterspeech", m.counterspeech_impressions], ["ambiguous", m.ambiguous_impressions]];
+    const stack = parts.map(([l, n]) => `<span class="sw ${l}" style="flex:${n}" title="${LABEL_NAMES[l]}: ${n}"></span>`).join("");
+    const stackText = parts.map(([l, n]) => `${LABEL_NAMES[l]} ${n}`).join(" · ");
+    let detail = "";
+    if (S.agent) {
+      const a = S.bundle.agents.find((x) => x.id === S.agent);
+      detail = `<p class="muted" style="margin-top:10px">${esc(a.name)}'s feed in round ${S.round}:</p><ul class="feedlist">${
+        (snap.feeds[S.agent] || []).map((item, i) => `<li><span class="num">#${i + 1}</span><span class="sw ${posts[item.post_id].label}"></span>
+          <span><button data-post="${item.post_id}">${item.post_id}</button> ${LABEL_NAMES[posts[item.post_id].label]}${item.action !== "none" ? " · <strong>" + item.action + "d</strong>" : ""}</span>
+          <span class="num">score ${item.score}</span></li>`).join("")}</ul>`;
+    }
+    return `<div class="panel"><h3>${esc(title)} <small>${key === "baseline" ? "baseline" : S.bundle.meta.status}</small></h3>${grid}
+      <div class="stack" aria-hidden="true">${stack}</div>
+      <div class="stack-legend">Cumulative impressions to round ${S.round} (of ${total}): ${stackText}</div>${detail}</div>`;
+  }).join("");
+  $("panels").querySelectorAll(".agent").forEach((el) => el.onclick = () => {
+    S.agent = S.agent === el.dataset.agent ? null : el.dataset.agent; renderReplay();
+  });
+  $("panels").querySelectorAll("button[data-post]").forEach((el) => el.onclick = () => {
+    S.post = el.dataset.post; renderInspector(); $("inspector").scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+}
+
+function play() {
+  if (S.round >= S.bundle.config.rounds) S.round = 0;
+  $("play").innerHTML = "&#10074;&#10074; Pause";
+  const step = () => {
+    S.round += 1; renderReplay(); renderInspector();
+    if (S.round >= S.bundle.config.rounds) stop();
+  };
+  step();
+  S.timer = setInterval(step, 1100);
+}
+function stop() { clearInterval(S.timer); S.timer = null; $("play").innerHTML = "&#9654; Replay"; }
+
+function scoreBreakdown(counts, ruleKey, cap) {
+  const parts = counts.map((n) => {
+    if (ruleKey === "baseline") return String(n);
+    if (ruleKey === "capped") return `min(${n},${cap})`;
+    if (ruleKey === "sqrt") return `√${n}`;
+    if (ruleKey === "breadth") return n ? "1" : "0";
+    return "0";
+  });
+  return ruleKey === "chronological" ? "0 (newest first)" : parts.join(" + ");
+}
+
+function renderInspector() {
+  const posts = postsById(), sc = scenario(), focus = sc.focus_post_ids;
+  const firstHarm = focus.find((id) => posts[id].label === "antisemitic");
+  const firstBenign = focus.find((id) => posts[id].label !== "antisemitic");
+  $("quick-posts").innerHTML = `<button class="btn" data-p="${firstHarm}">Harmful focus post</button><button class="btn" data-p="${firstBenign}">Benign control</button>`;
+  $("quick-posts").querySelectorAll("button").forEach((b) => b.onclick = () => { S.post = b.dataset.p; renderInspector(); });
+  const ordered = [...focus, ...S.bundle.posts.map((p) => p.id).filter((id) => !focus.includes(id))];
+  $("post-select").innerHTML = ordered.map((id) =>
+    `<option value="${id}" ${id === S.post ? "selected" : ""}>${id} · ${LABEL_NAMES[posts[id].label]}${focus.includes(id) ? " (focus)" : ""}</option>`).join("");
+  const post = posts[S.post], r = run(), cand = S.bundle.meta.candidate;
+  const panel = (key, ruleKey, title) => {
+    const rounds = r.policies[key].rounds, snap = rounds[S.round - 1];
+    const counts = snap.post_counts[S.post], score = snap.post_scores[S.post];
+    const shownNow = Object.values(snap.feeds).filter((f) => f.some((i) => i.post_id === S.post)).length;
+    const shownTotal = rounds.slice(0, S.round).reduce((sum, s) => sum + Object.values(s.feeds).filter((f) => f.some((i) => i.post_id === S.post)).length, 0);
+    const max = Math.max(10, ...counts);
+    const bars = counts.map((n, g) => {
+      const clipped = ruleKey === "capped" && n > cand.cap;
+      const cap = ruleKey === "capped" ? `<span class="cap-line" style="left:${(100 * cand.cap / max)}%" title="cap ${cand.cap}"></span>` : "";
+      return `<div class="bar-row"><span>${esc(S.bundle.config.communities[g])}</span><span class="bar-track"><span class="bar-fill${clipped ? " clipped" : ""}" style="width:${100 * n / max}%"></span>${cap}</span><span class="num">${n}</span></div>`;
+    }).join("");
+    return `<div class="panel"><h3>${esc(title)} <small>round ${S.round}</small></h3>
+      <div class="muted">Distinct endorsers per community at the start of the round</div><div class="bars">${bars}</div>
+      <div class="formula">score = ${scoreBreakdown(counts, ruleKey, cand.cap)} = <strong>${score}</strong></div>
+      <p class="muted" style="margin-top:8px">Shown to ${shownNow} agents this round; ${shownTotal} impressions so far.</p></div>`;
+  };
+  $("inspector").innerHTML = `<div><strong>${esc(post.id)}</strong> · <span class="sw ${post.label}" style="display:inline-block;width:12px;height:10px;border-radius:2px"></span> ${LABEL_NAMES[post.label]}${post.about_jewish_life ? " · about Jewish community life" : ""} · topic: ${esc(post.topic)}</div>
+    <div class="post-text">${esc(post.text)}</div><p class="muted">${esc(post.label_reason)} (${esc(post.review_status)})</p>
+    <div class="inspector-grid">${panel("baseline", "baseline", S.bundle.meta.baseline.name)}${panel("candidate", cand.rule, candidateName())}</div>`;
+}
+
+async function runLab() {
+  const rule = $("rule-select").value, cap = $("cap-input").value;
+  $("lab-error").textContent = ""; $("run-lab").disabled = true; $("lab-state").textContent = "Running 30 paired simulations…";
+  try {
+    const response = await fetch(`api/experiment?rule=${encodeURIComponent(rule)}&cap=${encodeURIComponent(cap)}`, { cache: "no-store" });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Experiment failed");
+    stop();
+    S.bundle = data; clampState(); addLabRun(data);
+    $("lab-state").textContent = "Done. The dashboard now shows this run.";
+    renderAll();
+    $("tiles").scrollIntoView({ behavior: "smooth", block: "center" });
+  } catch (error) {
+    $("lab-error").textContent = error.message; $("lab-state").textContent = "";
+  } finally { $("run-lab").disabled = !S.server; }
+}
+
+function addLabRun(bundle) {
+  const m = bundle.meta;
+  const row = { config_hash: m.config_hash, rule: m.candidate.rule, name: m.candidate.name, cap: m.candidate.uses_cap ? m.candidate.cap : null,
+    status: m.status, fixtures: bundle.scenarios.map((s) => ({ id: s.id, name: s.name,
+      harm: s.summary.comparisons.harmful_exposure_delta_pp.mean, ordinary: s.summary.comparisons.ordinary_engagement_retention.mean,
+      counter: s.summary.comparisons.counterspeech_exposure_retention.mean, jewish: s.summary.comparisons.jewish_life_reach_retention.mean,
+      levels: Object.fromEntries(s.feedback.map((f) => [f.metric, f.level])) })) };
+  S.labRuns = [row, ...S.labRuns.filter((r) => r.config_hash !== row.config_hash)].slice(0, 12);
+  S.labRuns.sort((a, b) => (b.status === "pre-registered") - (a.status === "pre-registered"));
+  store.set("tt-lab-runs", S.labRuns);
+}
+
+function renderCompare() {
+  const fixtures = S.prereg.scenarios;
+  const cell = (value, level, fmt) => `<td class="num">${level && level !== "neutral" ? `<span class="icon ${level}" style="width:14px;height:14px;font-size:.6rem;vertical-align:-2px">${ICONS[level]}</span> ` : ""}${fmt(value)}</td>`;
+  const head = `<thead><tr><th rowspan="2">Rule</th>${fixtures.map((f) => `<th colspan="4">${esc(f.name)}</th>`).join("")}</tr>
+    <tr>${fixtures.map(() => `<th class="num">Harm Δ</th><th class="num">Ordinary eng.</th><th class="num">Counter&shy;speech exp.</th><th class="num">Jewish life</th>`).join("")}</tr></thead>`;
+  const body = S.labRuns.map((r) => `<tr class="${r.config_hash === S.bundle.meta.config_hash ? "current" : ""}">
+    <td>${esc(r.name)}${r.cap ? " · cap " + r.cap : ""}<br><span class="muted">${r.status}</span></td>
+    ${r.fixtures.map((f) => cell(f.harm, f.levels.harm, pp) + cell(f.ordinary, f.levels.ordinary_engagement_retention, pct)
+      + cell(f.counter, f.levels.counterspeech_exposure_retention, pct) + cell(f.jewish, f.levels.jewish_life_reach_retention, pct)).join("")}</tr>`).join("");
+  $("compare-table").innerHTML = head + "<tbody>" + body + "</tbody>";
+}
+
+function renderSweep() {
+  const sw = S.prereg.sweep, fx = sw.fixtures[scenario().id];
+  const labCap = S.bundle.meta.candidate.rule === "capped" ? S.bundle.meta.candidate.cap : null;
+  $("sweep-desc").textContent = `${fx.name}: community-capped rule at caps ${sw.caps.join(", ")}, compared with the baseline. Lines show the mean across seeds; the band shows the seed range. This is a sensitivity check, not a way to choose the cap.`;
+  const metrics = [
+    ["harmful_exposure_delta_pp", "Antisemitic exposure change (pp)", pp, 0],
+    ["ordinary_engagement_retention", "Ordinary engagement retention", (v) => pct(v), 1],
+    ["counterspeech_exposure_retention", "Counterspeech exposure retention", (v) => pct(v), 1],
+    ["jewish_life_reach_retention", "Jewish community-life reach retention", (v) => pct(v), 1],
+  ];
+  $("charts").innerHTML = metrics.map(([key, title], i) => `<div class="chart" data-i="${i}"><h3>${title}</h3><div class="plot"></div></div>`).join("");
+  metrics.forEach(([key, , fmt, ref], i) => drawLine($("charts").children[i].querySelector(".plot"), fx.points, key, fmt, ref, labCap));
+  $("sweep-table").innerHTML = `<thead><tr><th>Cap</th>${metrics.map(([, t]) => `<th class="num">${t}</th>`).join("")}</tr></thead><tbody>${
+    fx.points.map((p) => `<tr><td>${p.cap}${p.cap === 2 ? " (pre-registered)" : ""}</td>${metrics.map(([k, , f]) =>
+      `<td class="num">${f(p[k].mean)} <span class="muted">(${f(p[k].min)} to ${f(p[k].max)})</span></td>`).join("")}</tr>`).join("")}</tbody>`;
+}
+
+function drawLine(host, points, key, fmt, ref, labCap) {
+  const W = 280, H = 150, L = 44, R = 10, T = 10, B = 26;
+  const vals = points.flatMap((p) => [p[key].min, p[key].max]).filter((v) => v != null).concat([ref]);
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (hi - lo < 1e-9) { lo -= ref ? 0.1 : 1; hi += ref ? 0.1 : 1; }
+  const pad = (hi - lo) * 0.1; lo -= pad; hi += pad;
+  const caps = points.map((p) => p.cap);
+  const x = (c) => L + (c - caps[0]) / (caps[caps.length - 1] - caps[0]) * (W - L - R);
+  const y = (v) => T + (hi - v) / (hi - lo) * (H - T - B);
+  const valid = points.filter((p) => p[key].mean != null);
+  const ticks = [lo + pad, (lo + hi) / 2, hi - pad];
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(key)} by cap">`;
+  ticks.forEach((t) => { svg += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--border)" stroke-width="1"/><text x="${L - 6}" y="${y(t) + 3}" text-anchor="end">${esc(fmt(t))}</text>`; });
+  svg += `<line x1="${L}" x2="${W - R}" y1="${y(ref)}" y2="${y(ref)}" stroke="var(--text-muted)" stroke-dasharray="3 3" stroke-width="1"/>`;
+  svg += `<line x1="${x(2)}" x2="${x(2)}" y1="${T}" y2="${H - B}" stroke="var(--good)" stroke-width="1.5" stroke-dasharray="2 2"/><text x="${x(2) + 3}" y="${T + 8}">pre-reg.</text>`;
+  if (labCap && labCap !== 2 && caps.includes(labCap)) svg += `<line x1="${x(labCap)}" x2="${x(labCap)}" y1="${T}" y2="${H - B}" stroke="var(--serious)" stroke-width="1.5" stroke-dasharray="2 2"/><text x="${x(labCap) + 3}" y="${T + 18}">lab</text>`;
+  if (valid.length) {
+    const band = valid.map((p) => `${x(p.cap)},${y(p[key].max)}`).concat(valid.slice().reverse().map((p) => `${x(p.cap)},${y(p[key].min)}`)).join(" ");
+    svg += `<polygon points="${band}" fill="var(--band)" opacity=".7"/>`;
+    svg += `<polyline points="${valid.map((p) => `${x(p.cap)},${y(p[key].mean)}`).join(" ")}" fill="none" stroke="var(--line)" stroke-width="2" stroke-linejoin="round"/>`;
+    valid.forEach((p, i) => { svg += `<circle cx="${x(p.cap)}" cy="${y(p[key].mean)}" r="4" fill="var(--line)" stroke="var(--surface-1)" stroke-width="2"/><circle class="hit" data-i="${i}" cx="${x(p.cap)}" cy="${y(p[key].mean)}" r="12" fill="transparent"/>`; });
+  }
+  caps.forEach((c) => { svg += `<text x="${x(c)}" y="${H - B + 14}" text-anchor="middle">${c}</text>`; });
+  svg += `<text x="${(L + W - R) / 2}" y="${H - 1}" text-anchor="middle">cap</text></svg>`;
+  host.innerHTML = svg;
+  const tip = $("tooltip");
+  host.querySelectorAll(".hit").forEach((el) => {
+    el.onmouseenter = (e) => {
+      const p = valid[+el.dataset.i];
+      tip.innerHTML = `<strong>Cap ${p.cap}</strong><br>mean ${esc(fmt(p[key].mean))}<br>seeds ${esc(fmt(p[key].min))} to ${esc(fmt(p[key].max))}`;
+      tip.classList.remove("hidden");
+      const rect = el.getBoundingClientRect();
+      tip.style.left = (rect.left + window.scrollX + 14) + "px"; tip.style.top = (rect.top + window.scrollY - 10) + "px";
+    };
+    el.onmouseleave = () => tip.classList.add("hidden");
+  });
+}
+
+function feedbackContext() {
+  const m = S.bundle.meta;
+  return { rule: m.candidate.rule, cap: String(m.candidate.cap), status: m.status, fixture: scenario().id, config_hash: m.config_hash };
+}
+
+async function loadFeedback() {
+  if (S.server) {
+    try {
+      const data = await (await fetch("api/feedback", { cache: "no-store" })).json();
+      S.feedback = data.feedback; S.experiments = data.experiments; return;
+    } catch (e) { /* fall back to local notes */ }
+  }
+  S.feedback = store.get("tt-feedback", []);
+}
+
+async function saveFeedback(event) {
+  event.preventDefault();
+  const form = new FormData(event.target);
+  const entry = { ...Object.fromEntries(form.entries()), ...feedbackContext() };
+  $("feedback-error").textContent = "";
+  try {
+    if (S.server) {
+      const response = await fetch("api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(entry) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not save");
+      await loadFeedback();
+    } else {
+      S.feedback.push({ at: new Date().toISOString(), ...entry });
+      store.set("tt-feedback", S.feedback);
+    }
+    event.target.note.value = "";
+    renderFeedbackLog();
+  } catch (error) { $("feedback-error").textContent = error.message; }
+}
+
+function renderFeedbackLog() {
+  const c = feedbackContext();
+  $("feedback-context").textContent = `Attached: ${c.rule}${c.rule === "capped" ? " cap " + c.cap : ""} · ${c.status} · ${scenario().name}` + (S.server ? "" : " · saved in this browser only");
+  const names = { useful: "Useful as shown", "needs-changes": "Needs changes", misleading: "Risk of misleading" };
+  $("feedback-log").innerHTML = S.feedback.length ? S.feedback.slice().reverse().map((f) => `<div class="log-entry">
+    <div class="meta">${esc(f.reviewer || "anonymous")} · ${esc(f.role)} · ${esc(names[f.rating] || f.rating)} · ${esc(f.rule)}${f.rule === "capped" ? " cap " + esc(f.cap) : ""} · ${esc(f.status)} · ${esc(f.fixture)} · ${esc((f.at || "").slice(0, 16).replace("T", " "))}</div>
+    <div>${esc(f.note)}</div></div>`).join("") : `<p class="muted">No feedback yet.</p>`;
+}
+
+function downloadLog() {
+  const blob = new Blob([JSON.stringify({ exported_at: new Date().toISOString(), feedback: S.feedback, experiments: S.experiments, lab_runs: S.labRuns }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "tikkuntech-feedback-log.json"; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function renderMethod() {
+  const m = S.bundle.meta, cfg = S.bundle.config;
+  $("method").textContent = `${cfg.agents_count} agents in ${cfg.communities.length} network communities · ${S.bundle.posts.length} frozen posts about "${m.event}" · ${cfg.rounds} rounds, ${cfg.feed_size} feed items per round · seeds ${cfg.seeds.join(", ")} · already-seen posts are hidden in both policies · random draws keyed by (seed, round, agent, post, decision), so both policies face identical chance events.`;
+  $("limits").innerHTML = m.limitations.map((l) => `<li>${esc(l)}</li>`).join("");
+}
+
+init().catch((error) => {
+  document.querySelector("main").insertAdjacentHTML("afterbegin", `<p class="error">Could not load data/results.json. Run <code>python app.py</code> and open the address it prints. (${esc(error.message)})</p>`);
+});
+</script>
+</body>
+</html>
