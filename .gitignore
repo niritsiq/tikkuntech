@@ -7,3 +7,6 @@ runs/
 # secrets (API keys)
 .env
 *.env
+
+# browser logs
+debug.log
